@@ -16,8 +16,7 @@ const messageSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    trim: true,
-    match: [/^(\+63|0)?[0-9]{10}$/, 'Please enter a valid Philippine phone number']
+    trim: true
   },
   subject: {
     type: String,
@@ -63,28 +62,13 @@ const messageSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-  tags: [{
-    type: String,
-    trim: true
-  }],
-  attachments: [{
-    filename: String,
-    url: String,
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
   }]
 }, {
   timestamps: true
 });
 
 // Indexes
-messageSchema.index({ email: 1 });
 messageSchema.index({ status: 1 });
-messageSchema.index({ category: 1 });
-messageSchema.index({ priority: 1 });
 messageSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Message', messageSchema);

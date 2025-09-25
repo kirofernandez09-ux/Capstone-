@@ -1,13 +1,12 @@
-const mongoose = require('mongoose');
-const User = require('../models/User');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import User from '../models/User.js'; // Must add .js extension for local files
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const createAdmin = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
 
     console.log('✅ Connected to MongoDB');
 
@@ -15,27 +14,25 @@ const createAdmin = async () => {
     const existingAdmin = await User.findOne({ email: 'admin@dorayd.com' });
     
     if (existingAdmin) {
-      console.log('⚠️ Admin user already exists');
+      console.log('⚠️ Admin user already exists. To reset, please clear the "users" collection in your database first.');
+      mongoose.connection.close();
       return;
     }
 
     // Create admin user
     const admin = await User.create({
-      name: 'Admin User',
+      firstName: 'Admin',
+      lastName: 'User',
       email: 'admin@dorayd.com',
-      password: 'admin123456',
+      password: 'admin123', 
       role: 'admin',
       phone: '+639171234567',
       isActive: true,
-      emailVerified: true
     });
 
     console.log('✅ Admin user created successfully!');
     console.log(`📧 Email: ${admin.email}`);
     console.log(`🔑 Password: admin123456`);
-    console.log(`👑 Role: ${admin.role}`);
-    console.log(`📅 Created: 2025-09-03 14:01:22`);
-    console.log(`👤 Created by: BlueDrinkingWater`);
 
   } catch (error) {
     console.error('❌ Error creating admin:', error);

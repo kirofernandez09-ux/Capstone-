@@ -1,41 +1,54 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs'; // FIX: Changed from require to import for ES Modules
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true, select: false }, // Hide password by default
   phone: { type: String },
-  role: { 
-    type: String, 
-    enum: ['customer', 'employee', 'admin'], 
-    default: 'customer' 
+  role: {
+    type: String,
+    enum: ['customer', 'employee', 'admin'],
+    default: 'customer'
   },
-  permissions: [{
-    module: { type: String, enum: ['services', 'bookings', 'content', 'users', 'reports'] },
-    access: { type: String, enum: ['read', 'write', 'delete', 'full'] }
-  }],
+  position: { type: String },
+  permissions: {
+    canManageCars: { type: Boolean, default: false },
+    canManageTours: { type: Boolean, default: false },
+    canManageBookings: { type: Boolean, default: false },
+    canViewReports: { type: Boolean, default: false },
+    canManageEmployees: { type: Boolean, default: false },
+    canManageContent: { type: Boolean, default: false },
+    canViewMessages: { type: Boolean, default: false },
+    canManageMessages: { type: Boolean, default: false }
+  },
   isActive: { type: Boolean, default: true },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
-  lastLogin: Date,
-  accountCreated: { type: Date, default: Date.now }
-});
+  lastLogin: Date
+}, { timestamps: true });
 
-// Add password hashing and reset token methods
+// Hash password before saving if it has been modified
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
+// Method to compare candidate password with the user's actual password
+userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+// Method to generate a password reset token
 userSchema.methods.createPasswordResetToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // Token expires in 10 minutes
   return resetToken;
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+export default User;

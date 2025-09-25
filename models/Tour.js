@@ -21,8 +21,7 @@ const tourSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: [true, 'Price is required'],
-    min: [500, 'Price cannot be less than ₱500'],
-    max: [100000, 'Price cannot exceed ₱100,000']
+    min: [0, 'Price cannot be negative']
   },
   duration: {
     type: String,
@@ -33,112 +32,42 @@ const tourSchema = new mongoose.Schema({
   maxGroupSize: {
     type: Number,
     required: [true, 'Maximum group size is required'],
-    min: [1, 'Group size must be at least 1'],
-    max: [50, 'Group size cannot exceed 50']
+    min: [1, 'Group size must be at least 1']
   },
   difficulty: {
     type: String,
     required: [true, 'Difficulty level is required'],
-    enum: ['easy', 'moderate', 'challenging', 'extreme'],
+    enum: ['easy', 'moderate', 'challenging'],
     default: 'moderate'
   },
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: ['adventure', 'cultural', 'nature', 'beach', 'city', 'historical', 'food', 'photography'],
+    enum: ['adventure', 'cultural', 'nature', 'beach', 'city', 'historical'],
     default: 'nature'
   },
   images: [{
     type: String,
-    required: true
+    required: false
   }],
   itinerary: [{
-    day: {
-      type: Number,
-      required: true
-    },
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    activities: [{
-      type: String,
-      trim: true
-    }],
-    meals: [{
-      type: String,
-      enum: ['breakfast', 'lunch', 'dinner', 'snack'],
-      default: []
-    }],
-    accommodation: {
-      type: String,
-      trim: true
-    }
+    day: { type: Number },
+    title: { type: String },
+    activities: [{ type: String }]
   }],
-  inclusions: [{
-    type: String,
-    trim: true
-  }],
-  exclusions: [{
-    type: String,
-    trim: true
-  }],
-  requirements: [{
-    type: String,
-    trim: true
-  }],
+  inclusions: [{ type: String }],
+  exclusions: [{ type: String }],
   isAvailable: {
     type: Boolean,
     default: true
   },
-  availableDates: [{
-    startDate: {
-      type: Date,
-      required: true
-    },
-    endDate: {
-      type: Date,
-      required: true
-    },
-    slotsAvailable: {
-      type: Number,
-      required: true,
-      default: 1
-    }
-  }],
-  guide: {
-    name: {
-      type: String,
-      trim: true
-    },
-    experience: {
-      type: String,
-      trim: true
-    },
-    languages: [{
-      type: String,
-      trim: true
-    }],
-    photo: {
-      type: String
-    }
+  archived: {
+    type: Boolean,
+    default: false
   },
   ratings: {
-    average: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5
-    },
-    count: {
-      type: Number,
-      default: 0
-    }
-  },
-  bookingCount: {
-    type: Number,
-    default: 0
+    average: { type: Number, default: 0, min: 0, max: 5 },
+    count: { type: Number, default: 0, min: 0 }
   },
   featured: {
     type: Boolean,
@@ -152,13 +81,8 @@ const tourSchema = new mongoose.Schema({
 
 // Indexes for performance
 tourSchema.index({ destination: 1 });
-tourSchema.index({ category: 1 });
 tourSchema.index({ price: 1 });
-tourSchema.index({ difficulty: 1 });
 tourSchema.index({ isAvailable: 1 });
-tourSchema.index({ 'ratings.average': -1 });
-tourSchema.index({ featured: -1 });
-tourSchema.index({ createdAt: -1 });
 
 // Virtual for bookings
 tourSchema.virtual('bookings', {
@@ -166,15 +90,5 @@ tourSchema.virtual('bookings', {
   localField: '_id',
   foreignField: 'tour'
 });
-
-// Update booking count
-tourSchema.methods.updateBookingCount = async function() {
-  const Booking = mongoose.model('Booking');
-  this.bookingCount = await Booking.countDocuments({ 
-    tour: this._id, 
-    status: { $in: ['confirmed', 'completed'] } 
-  });
-  return this.save({ validateBeforeSave: false });
-};
 
 export default mongoose.model('Tour', tourSchema);

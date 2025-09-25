@@ -66,13 +66,9 @@ const carSchema = new mongoose.Schema({
     type: String, // URLs to images
     required: false
   }],
-  available: {
-    type: Boolean,
-    default: true // Set default to true so cars are available for booking
-  },
   isAvailable: {
     type: Boolean,
-    default: true // Add this field specifically for customer booking
+    default: true
   },
   archived: {
     type: Boolean,
@@ -85,7 +81,7 @@ const carSchema = new mongoose.Schema({
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false // Optional for now
+    required: false
   }
 }, {
   timestamps: true,
@@ -97,7 +93,7 @@ const carSchema = new mongoose.Schema({
 carSchema.index({ brand: 1, model: 1 });
 carSchema.index({ location: 1 });
 carSchema.index({ pricePerDay: 1 });
-carSchema.index({ available: 1, isAvailable: 1 });
+carSchema.index({ isAvailable: 1 });
 carSchema.index({ createdAt: -1 });
 
 // Virtual for bookings
