@@ -14,7 +14,15 @@ const Reports = () => {
     setLoading(true);
     try {
       const response = await DataService.fetchDashboardAnalytics();
-      setAnalytics(response.data);
+      // --- FIX STARTS HERE ---
+      // Ensure the response has data before setting the state
+      if (response && response.success) {
+        setAnalytics(response.data);
+      } else {
+        console.error("Failed to fetch report data:", response.message);
+        setAnalytics(null); // Set to null on failure
+      }
+      // --- FIX ENDS HERE ---
     } catch (error) {
       console.error("Failed to fetch report data:", error);
     } finally {
@@ -38,11 +46,18 @@ const Reports = () => {
     return <div className="text-center p-10">Loading reports...</div>;
   }
   
-  if (!analytics) {
-      return <div className="text-center p-10 text-red-500">Could not load report data.</div>
+  // --- FIX STARTS HERE ---
+  // A more robust check for when the data fails to load
+  if (!analytics || !analytics.summary) {
+      return (
+        <div className="text-center p-10 text-red-500">
+          Could not load report data. This might be due to an authentication issue. Please try logging out and logging back in.
+        </div>
+      )
   }
 
   const { summary, recentBookings } = analytics;
+  // --- FIX ENDS HERE ---
 
   return (
     <div className="space-y-6">
@@ -78,7 +93,7 @@ const Reports = () => {
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">Recent Bookings</h3>
         <div className="space-y-4">
-            {recentBookings.length > 0 ? recentBookings.map(booking => (
+            {recentBookings && recentBookings.length > 0 ? recentBookings.map(booking => (
                 <div key={booking._id} className="flex justify-between items-center border-b pb-2">
                     <div>
                         <p className="font-medium">{booking.bookingReference}</p>

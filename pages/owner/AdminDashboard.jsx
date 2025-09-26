@@ -12,7 +12,6 @@ import BookingCalendar from './BookingCalendar';
 // Re-usable helper components
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const formatCurrency = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
-const isDashboardPage = location.pathname === '/owner' || location.pathname === '/owner/dashboard';
 
 const AdminDashboard = () => {
     const location = useLocation();

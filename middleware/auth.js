@@ -13,7 +13,10 @@ export const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('+password');
+    // --- FIX STARTS HERE ---
+    // Removed .select('+password') to ensure the password is not fetched during standard authentication checks.
+    const user = await User.findById(decoded.id);
+    // --- FIX ENDS HERE ---
 
     if (!user || !user.isActive) {
       return res.status(401).json({

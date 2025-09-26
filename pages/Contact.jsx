@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import DataService from '../components/services/DataService';
 
@@ -14,9 +14,41 @@ const Contact = () => {
     message: ''
   });
 
+  // --- FIX STARTS HERE: State for dynamic contact info ---
+  const [contactInfo, setContactInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  // --- FIX ENDS HERE ---
+
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // --- FIX STARTS HERE: Fetch contact info from backend ---
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      setLoading(true);
+      try {
+        const response = await DataService.fetchContent('contact');
+        if (response.success) {
+          // Parse the content string to create a structured object
+          const lines = response.data.content.split('\n');
+          const info = {
+            phone: lines.find(line => line.startsWith('Phone:'))?.split(':')[1]?.trim() || '+63 917 123 4567',
+            email: lines.find(line => line.startsWith('Email:'))?.split(':')[1]?.trim() || 'info@dorayd.com',
+            address: lines.find(line => line.startsWith('Address:'))?.split(':')[1]?.trim() || 'Manila, Philippines',
+            hours: lines.find(line => line.startsWith('Hours:'))?.split(':')[1]?.trim() || '24/7 Service',
+          };
+          setContactInfo(info);
+        }
+      } catch (error) {
+        console.error("Failed to fetch contact info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContactInfo();
+  }, []);
+  // --- FIX ENDS HERE ---
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -83,33 +115,6 @@ const Contact = () => {
     }
   };
 
-  const contactInfo = [
-    {
-      icon: Phone,
-      title: 'Phone',
-      details: '+63 917 123 4567',
-      description: '24/7 Customer Support'
-    },
-    {
-      icon: Mail,
-      title: 'Email',
-      details: 'info@dorayd.com',
-      description: 'Send us your questions'
-    },
-    {
-      icon: MapPin,
-      title: 'Address',
-      details: 'Manila, Philippines',
-      description: 'Visit our office'
-    },
-    {
-      icon: Clock,
-      title: 'Business Hours',
-      details: '24/7 Service',
-      description: 'Always here for you'
-    }
-  ];
-
   const faqs = [
     {
       question: 'How do I make a booking?',
@@ -128,6 +133,35 @@ const Contact = () => {
       answer: 'Yes, you can modify your booking up to 24 hours before your scheduled date, subject to availability. Contact us as soon as possible to make changes.'
     }
   ];
+  
+  // --- FIX STARTS HERE: Create the contact info array dynamically ---
+  const contactInfoCards = loading || !contactInfo ? [] : [
+    {
+      icon: Phone,
+      title: 'Phone',
+      details: contactInfo.phone,
+      description: '24/7 Customer Support'
+    },
+    {
+      icon: Mail,
+      title: 'Email',
+      details: contactInfo.email,
+      description: 'Send us your questions'
+    },
+    {
+      icon: MapPin,
+      title: 'Address',
+      details: contactInfo.address,
+      description: 'Visit our office'
+    },
+    {
+      icon: Clock,
+      title: 'Business Hours',
+      details: contactInfo.hours,
+      description: 'Always here for you'
+    }
+  ];
+  // --- FIX ENDS HERE ---
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -285,7 +319,8 @@ const Contact = () => {
             <div className="bg-white rounded-xl shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
               <div className="space-y-6">
-                {contactInfo.map((info, index) => (
+                {/* --- FIX STARTS HERE: Render dynamic contact cards --- */}
+                {loading ? <p>Loading contact info...</p> : contactInfoCards.map((info, index) => (
                   <div key={index} className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <info.icon className="w-6 h-6 text-blue-600" />
@@ -297,6 +332,7 @@ const Contact = () => {
                     </div>
                   </div>
                 ))}
+                {/* --- FIX ENDS HERE --- */}
               </div>
             </div>
 
@@ -306,7 +342,7 @@ const Contact = () => {
               <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center">
                 <div className="text-center">
                   <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 font-medium">Manila, Philippines</p>
+                  <p className="text-gray-600 font-medium">{loading ? '...' : contactInfo?.address}</p>
                   <p className="text-sm text-gray-500 mt-2">Detailed address will be provided upon booking</p>
                 </div>
               </div>

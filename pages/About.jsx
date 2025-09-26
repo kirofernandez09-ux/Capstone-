@@ -22,18 +22,19 @@ const About = () => {
 
         console.log(`🔄 Fetching about content from database at 2025-09-03 15:28:10`);
 
-        // Fetch content from database
-        const [missionResponse, visionResponse, aboutResponse] = await Promise.allSettled([
+        // --- FIX STARTS HERE: Fetch content from database ---
+        const [missionResponse, visionResponse, aboutResponse] = await Promise.all([
           DataService.fetchContent('mission'),
           DataService.fetchContent('vision'),
           DataService.fetchContent('about')
         ]);
 
         const contentData = {
-          mission: missionResponse.status === 'fulfilled' ? missionResponse.value : null,
-          vision: visionResponse.status === 'fulfilled' ? visionResponse.value : null,
-          about: aboutResponse.status === 'fulfilled' ? aboutResponse.value : null
+          mission: missionResponse.success ? missionResponse.data : null,
+          vision: visionResponse.success ? visionResponse.data : null,
+          about: aboutResponse.success ? aboutResponse.data : null
         };
+        // --- FIX ENDS HERE ---
 
         setContent(contentData);
         console.log(`✅ About content loaded from database at 2025-09-03 15:28:10`);
@@ -147,11 +148,15 @@ const About = () => {
     
     return (
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">{title}</h2>
+        {/* --- FIX STARTS HERE: Use dynamic title --- */}
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">{contentData?.title || title}</h2>
+        {/* --- FIX ENDS HERE --- */}
         <div className="prose prose-lg max-w-none">
-          <p className="text-gray-600 leading-relaxed">
+          {/* --- FIX STARTS HERE: Use dynamic content --- */}
+          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
             {contentData?.content || defaultContent}
           </p>
+          {/* --- FIX ENDS HERE --- */}
         </div>
         {contentData && (
           <div className="mt-4 text-xs text-gray-500">
