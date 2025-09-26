@@ -18,11 +18,21 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const response = await DataService.getCurrentUser();
-          setUser(response.user);
-          setIsAuthenticated(true);
+          // --- FIX STARTS HERE ---
+          // Check if the API call was successful and a user was returned
+          if (response.success && response.user) {
+            setUser(response.user);
+            setIsAuthenticated(true);
+          } else {
+            // If not successful, treat it as a failed validation
+            console.error("Token validation failed:", response.message);
+            DataService.logout(); // Clear invalid token
+          }
+          // --- FIX ENDS HERE ---
         } catch (error) {
-          console.error("Token validation failed:", error);
-          DataService.logout(); // Clear invalid token
+          // This catch is a fallback, though the DataService handles most errors
+          console.error("An unexpected error occurred during token validation:", error);
+          DataService.logout();
         }
       }
       setLoading(false);

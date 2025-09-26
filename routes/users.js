@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// FIX: Corrected folder path to 'controllers'
 import { getAllEmployees, createEmployee, updateEmployee, deleteEmployee, changeEmployeePassword } from '../controllers/usersController.js';
 import { auth, authorize } from '../middleware/auth.js';
 

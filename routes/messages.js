@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// FIX: Corrected folder path to 'controllers'
 import { getAllMessages, createMessage, replyToMessage, updateMessageStatus } from '../controllers/messagesController.js';
 import { auth, authorize } from '../middleware/auth.js';
 

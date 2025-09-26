@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// This import will now work correctly
 import { getAllCars, createCar, updateCar, archiveCar } from '../controllers/carsController.js';
 import { auth, authorize } from '../middleware/auth.js';
 

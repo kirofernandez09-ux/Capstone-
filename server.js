@@ -40,7 +40,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// --- FIX STARTS HERE ---
+// This line correctly serves static files (like images) from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// --- FIX ENDS HERE ---
 
 // Make io accessible to our routes so controllers can emit events
 app.set('io', io);
@@ -50,7 +54,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// API Routes - Now using the refactored route files
+// API Routes
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
