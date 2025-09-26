@@ -3,13 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, LogOut, Shield, UserCheck, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useAuth } from '../Login';
 
-export const Navbar = ({ onStaffLogin, onLogoClick }) => {
+export const Navbar = ({ onStaffLogin }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const userMenuRef = useRef(null);
 
   const navigation = [
@@ -20,7 +20,6 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
     { name: 'Contact', href: '/contact' },
   ];
 
-  // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -34,20 +33,10 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
     };
   }, []);
 
-  const handleLogoClick = () => {
-    setIsMenuOpen(false);
-    if (onLogoClick) {
-      onLogoClick();
-    } else {
-      navigate('/');
-    }
-  };
-
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
     navigate('/');
-    console.log(`👋 User logged out at 2025-09-03 15:18:19`);
   };
 
   const handleDashboardAccess = () => {
@@ -59,32 +48,19 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
     setUserMenuOpen(false);
   };
 
-  const handleStaffLogin = () => {
-    if (onStaffLogin) {
-      onStaffLogin();
-    } else {
-      navigate('/admin-login');
-    }
-  };
-
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo */}
           <div className="flex items-center">
-            <button
-              onClick={handleLogoClick}
-              className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity"
-            >
+            <Link to="/" className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-blue-600 rounded text-white flex items-center justify-center font-bold">
                 D
               </div>
               <span className="ml-2 text-xl font-bold text-gray-900">DoRayd</span>
-            </button>
+            </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
               <Link
@@ -99,7 +75,6 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
             ))}
           </div>
 
-          {/* Desktop User Menu */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated && user ? (
               <div className="relative" ref={userMenuRef}>
@@ -116,17 +91,17 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
                       <UserCheck className="w-4 h-4" />
                     )}
                   </div>
-                  <span>{user.name || user.email}</span>
+                  <span>{user.firstName || user.email}</span>
                 </button>
 
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user.name || 'User'}</p>
+                      <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                       <p className="text-xs text-blue-600 capitalize">{user.role} Account</p>
                     </div>
-                    
+
                     <button
                       onClick={handleDashboardAccess}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -138,7 +113,7 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
                       )}
                       {user.role === 'admin' ? 'Admin Dashboard' : 'Employee Dashboard'}
                     </button>
-                    
+
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
@@ -151,7 +126,7 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
               </div>
             ) : (
               <button
-                onClick={handleStaffLogin}
+                onClick={onStaffLogin}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
@@ -160,7 +135,6 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -172,7 +146,6 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
@@ -190,7 +163,7 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
                 {item.name}
               </Link>
             ))}
-            
+
             <div className="border-t border-gray-200 pt-3 mt-3">
               {isAuthenticated && user ? (
                 <div className="space-y-2">
@@ -206,13 +179,13 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{user.name || 'User'}</p>
+                        <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
                         <p className="text-xs text-gray-500">{user.email}</p>
                         <p className="text-xs text-blue-600 capitalize">{user.role} Account</p>
                       </div>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={() => {
                       handleDashboardAccess();
@@ -227,7 +200,7 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
                     )}
                     {user.role === 'admin' ? 'Admin Dashboard' : 'Employee Dashboard'}
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       handleLogout();
@@ -242,7 +215,7 @@ export const Navbar = ({ onStaffLogin, onLogoClick }) => {
               ) : (
                 <button
                   onClick={() => {
-                    handleStaffLogin();
+                    onStaffLogin();
                     setIsMenuOpen(false);
                   }}
                   className="w-full text-left px-3 py-2 text-base font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg mx-3 flex items-center gap-2"

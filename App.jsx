@@ -97,7 +97,8 @@ function App() {
 
             {/* Admin Protected Routes */}
             <Route path="/owner" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
-              <Route path="dashboard" element={null} /> {/* Content is in the layout */}
+              <Route index element={null} /> {/* This makes /owner load the layout with the dashboard content */}
+              <Route path="dashboard" element={null} />
               <Route path="manage-cars" element={<ManageCars />} />
               <Route path="manage-tours" element={<ManageTours />} />
               <Route path="manage-bookings" element={<ManageBookings />} />
@@ -109,7 +110,8 @@ function App() {
 
             {/* Employee Protected Routes */}
             <Route path="/employee" element={<ProtectedRoute requiredRole="employee"><EmployeeLayout /></ProtectedRoute>}>
-               <Route path="dashboard" element={null} /> {/* Content is in the layout */}
+               <Route index element={null} /> {/* This makes /employee load the layout with the dashboard content */}
+               <Route path="dashboard" element={null} />
                <Route path="manage-bookings" element={<ManageBookings />} />
             </Route>
 

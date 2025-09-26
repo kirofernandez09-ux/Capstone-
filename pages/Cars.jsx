@@ -14,31 +14,27 @@ const Cars = () => {
   const [selectedCar, setSelectedCar] = useState(null);
 
   useEffect(() => {
-    // Check if a car was passed from another page (like Home)
     if (location.state?.selectedItem) {
         setSelectedCar(location.state.selectedItem);
     }
     fetchCars(1, filters);
   }, []);
-  
+
   const fetchCars = async (page, currentFilters) => {
     setLoading(true);
     try {
       const response = await DataService.fetchAllCars({ ...currentFilters, page, limit: pagination.limit, archived: false, isAvailable: true });
       setCars(response.data);
-      // --- FIX STARTS HERE ---
-      // Safely set pagination data only if it exists in the response
       if (response.pagination) {
         setPagination(prev => ({ ...prev, total: response.pagination.total, page }));
       }
-      // --- FIX ENDS HERE ---
     } catch (error) {
       console.error("Failed to fetch cars:", error);
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
   const handleApplyFilters = () => fetchCars(1, filters);
   const handlePageChange = (newPage) => {
@@ -49,7 +45,11 @@ const Cars = () => {
 
   const CarCard = ({ car }) => (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <img src={car.images[0] || '/placeholder.png'} alt={`${car.brand} ${car.model}`} className="w-full h-48 object-cover"/>
+        <img
+          src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${car.images[0]}`}
+          alt={`${car.brand} ${car.model}`}
+          className="w-full h-48 object-cover"
+        />
         <div className="p-4">
             <h3 className="font-bold text-lg">{car.brand} {car.model}</h3>
             <p className="text-gray-600 text-sm">{car.location}</p>
@@ -64,7 +64,6 @@ const Cars = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Our Car Fleet</h1>
-      {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-wrap gap-4 items-center">
         <input name="brand" onChange={handleFilterChange} placeholder="Brand (e.g., Toyota)" className="p-2 border rounded"/>
         <input name="location" onChange={handleFilterChange} placeholder="Location (e.g., Manila)" className="p-2 border rounded"/>
@@ -73,12 +72,10 @@ const Cars = () => {
         <button onClick={handleApplyFilters} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Apply</button>
       </div>
 
-      {/* Results */}
        <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
            {loading ? <p>Loading...</p> : cars.map(car => <CarCard key={car._id} car={car} />)}
        </div>
 
-      {/* Pagination */}
       <div className="flex justify-center items-center mt-8">
         <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"><ChevronLeft/></button>
         <span>Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit) || 1}</span>

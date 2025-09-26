@@ -85,7 +85,7 @@ export const forgotPassword = async (req, res) => {
 // Reset Password - Step 2: Update password with token
 export const resetPassword = async (req, res) => {
     try {
-        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const hashedToken = crypto.createHash('sha265').update(req.params.token).digest('hex');
         const user = await User.findOne({
             resetPasswordToken: hashedToken,
             resetPasswordExpires: { $gt: Date.now() },

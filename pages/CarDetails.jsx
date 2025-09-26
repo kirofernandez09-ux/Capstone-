@@ -7,25 +7,12 @@ const CarDetails = () => {
   const navigate = useNavigate();
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState({ currency: '₱' }); // Default currency
+  const [config, setConfig] = useState({ currency: '₱' });
 
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
 
   useEffect(() => {
-    // Fetch app config from backend
-    const fetchConfig = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/config');
-        const configData = await response.json();
-        setConfig(configData);
-      } catch (error) {
-        console.error('Failed to fetch config:', error);
-        // Keep default config
-      }
-    };
-
-    // Fetch car data
     const fetchCar = async () => {
       try {
         const response = await fetch(`http://localhost:5000/api/cars/${id}`);
@@ -40,8 +27,6 @@ const CarDetails = () => {
         setLoading(false);
       }
     };
-
-    fetchConfig();
     fetchCar();
   }, [id]);
 
@@ -68,7 +53,6 @@ const CarDetails = () => {
 
   return (
     <div className="px-6 md:px-16 lg:px-24 xl:px-32 py-10">
-      {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 mb-6 text-gray-500 cursor-pointer"
@@ -77,13 +61,11 @@ const CarDetails = () => {
         Back to all cars
       </button>
 
-      {/* Top: Car image & Booking Form */}
       <div className="grid md:grid-cols-2 gap-6 items-start mb-10">
-        {/* Car Image & Basic Info */}
         <div>
           <div className="w-full h-[16rem] sm:h-[20rem] lg:h-[24rem] rounded-lg overflow-hidden mb-4">
             <img
-              src={car.image || car.images?.[0] || '/placeholder-car.jpg'}
+              src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${car.images[0]}`}
               alt={`${car.brand} ${car.model}`}
               className="w-full h-full object-cover"
             />
@@ -92,7 +74,6 @@ const CarDetails = () => {
           <p className="text-gray-500 text-md">{car.category} · {car.year}</p>
         </div>
 
-        {/* Booking Form */}
         <div className="bg-gray-50 p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Book This Car</h2>
           <p className="mb-4">
@@ -135,7 +116,6 @@ const CarDetails = () => {
         </div>
       </div>
 
-      {/* Car Info Icons */}
       <hr className="border-gray-300 my-6" />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
@@ -151,7 +131,6 @@ const CarDetails = () => {
         ))}
       </div>
 
-      {/* Description & Features */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
         <div>
           <h2 className="text-xl font-medium mb-3">Description</h2>

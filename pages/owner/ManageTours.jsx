@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Archive, X } from 'lucide-react';
+import { Plus, Edit3, Archive, X, MapPin, DollarSign, Calendar, Users, BarChart, Tag } from 'lucide-react';
 import DataService from '../../components/services/DataService';
 import ImageUpload from '../../components/ImageUpload';
 
@@ -7,7 +7,7 @@ const ManageTours = () => {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingTour, setEditingTour] = useState(null); // This will hold the tour being edited
+  const [editingTour, setEditingTour] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const initialFormState = {
@@ -35,13 +35,11 @@ const ManageTours = () => {
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   const handleImagesChange = (uploadedImages) => setFormData(prev => ({ ...prev, images: uploadedImages.map(img => img.url) }));
 
-  // --- EDIT FUNCTIONALITY STARTS HERE ---
   const handleEdit = (tour) => {
-    setEditingTour(tour); // Set the tour to be edited
-    setFormData({ ...initialFormState, ...tour }); // Pre-fill the form
-    setShowModal(true); // Open the modal
+    setEditingTour(tour);
+    setFormData({ ...initialFormState, ...tour });
+    setShowModal(true);
   };
-  // --- EDIT FUNCTIONALITY ENDS HERE ---
 
   const handleArchive = async (tourId) => {
     if (window.confirm('Are you sure you want to archive this tour?')) {
@@ -55,10 +53,8 @@ const ManageTours = () => {
     setSubmitting(true);
     try {
       if (editingTour) {
-        // If editing, call the update service
         await DataService.updateTour(editingTour._id, formData);
       } else {
-        // Otherwise, create a new one
         await DataService.createTour(formData);
       }
       setShowModal(false);
@@ -70,12 +66,33 @@ const ManageTours = () => {
     }
   };
 
+  const TourCard = ({ tour }) => (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
+        <img
+          src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${tour.images[0]}`}
+          alt={tour.title}
+          className="w-full h-48 object-cover"
+        />
+        <div className="p-4">
+            <h3 className="font-bold text-lg">{tour.title}</h3>
+            <p className="text-gray-600 text-sm">{tour.destination}</p>
+            <div className="flex justify-between items-center mt-4">
+                <span className="font-bold text-lg">₱{(tour.price || 0).toLocaleString()}/person</span>
+                <div>
+                    <button onClick={() => handleEdit(tour)} className="text-blue-600 hover:text-blue-800 p-2"><Edit3 size={18} /></button>
+                    <button onClick={() => handleArchive(tour._id)} className="text-red-600 hover:text-red-800 p-2"><Archive size={18} /></button>
+                </div>
+            </div>
+        </div>
+    </div>
+  );
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Manage Tours</h1>
-        <button 
-          onClick={() => { setEditingTour(null); setFormData(initialFormState); setShowModal(true); }} 
+        <button
+          onClick={() => { setEditingTour(null); setFormData(initialFormState); setShowModal(true); }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus size={20} /> Add New Tour
@@ -84,16 +101,7 @@ const ManageTours = () => {
 
       {loading ? <p>Loading...</p> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tours.map(tour => (
-            <div key={tour._id} className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-lg font-bold">{tour.title}</h3>
-              <p className="text-sm text-gray-500">{tour.destination}</p>
-              <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => handleEdit(tour)} className="text-blue-600 hover:text-blue-800"><Edit3 size={18} /></button>
-                <button onClick={() => handleArchive(tour._id)} className="text-red-600 hover:text-red-800"><Archive size={18} /></button>
-              </div>
-            </div>
-          ))}
+          {tours.map(tour => <TourCard key={tour._id} tour={tour} />)}
         </div>
       )}
 
@@ -106,11 +114,13 @@ const ManageTours = () => {
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input name="title" value={formData.title} onChange={handleInputChange} placeholder="Tour Title" className="w-full p-2 border rounded" required />
-                <input name="destination" value={formData.destination} onChange={handleInputChange} placeholder="Destination" className="w-full p-2 border rounded" required />
-                <input name="duration" value={formData.duration} onChange={handleInputChange} placeholder="Duration (e.g., 3 Days)" className="w-full p-2 border rounded" required />
-                <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price per person" className="w-full p-2 border rounded" required />
-                <input type="number" name="maxGroupSize" value={formData.maxGroupSize} onChange={handleInputChange} placeholder="Max Group Size" className="w-full p-2 border rounded" required />
+                <InputField icon={MapPin} name="title" value={formData.title} onChange={handleInputChange} placeholder="Tour Title" required />
+                <InputField icon={MapPin} name="destination" value={formData.destination} onChange={handleInputChange} placeholder="Destination" required />
+                <InputField icon={Calendar} name="duration" value={formData.duration} onChange={handleInputChange} placeholder="Duration (e.g., 3 Days)" required />
+                <InputField icon={DollarSign} type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price per person" required />
+                <InputField icon={Users} type="number" name="maxGroupSize" value={formData.maxGroupSize} onChange={handleInputChange} placeholder="Max Group Size" required />
+                <SelectField icon={BarChart} name="difficulty" value={formData.difficulty} onChange={handleInputChange} options={['easy', 'moderate', 'challenging']} required />
+                <SelectField icon={Tag} name="category" value={formData.category} onChange={handleInputChange} options={['adventure', 'cultural', 'nature', 'beach', 'city']} required />
               </div>
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description" className="w-full p-2 border rounded" required />
               <ImageUpload onImagesChange={handleImagesChange} existingImages={formData.images.map(url => ({ url }))} maxImages={10} category="tours" />
@@ -127,5 +137,21 @@ const ManageTours = () => {
     </div>
   );
 };
+
+const InputField = ({ icon: Icon, ...props }) => (
+    <div className="relative">
+        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        <input {...props} className="w-full p-2 pl-10 border rounded" />
+    </div>
+);
+
+const SelectField = ({ icon: Icon, options, ...props }) => (
+    <div className="relative">
+        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        <select {...props} className="w-full p-2 pl-10 border rounded appearance-none">
+            {options.map(option => <option key={option} value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>)}
+        </select>
+    </div>
+);
 
 export default ManageTours;

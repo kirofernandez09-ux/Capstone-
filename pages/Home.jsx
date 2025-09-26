@@ -38,12 +38,15 @@ const Home = () => {
 
   const renderCarCard = (car) => (
     <div key={car._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
-      <img src={(car.images && car.images[0]) || '/placeholder.png'} alt={`${car.brand} ${car.model}`} className="w-full h-48 object-cover"/>
+      <img
+        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${car.images[0]}`}
+        alt={`${car.brand} ${car.model}`}
+        className="w-full h-48 object-cover"
+      />
       <div className="p-4">
         <h3 className="font-bold text-lg">{car.brand} {car.model}</h3>
         <p className="text-gray-600 text-sm">{car.location}</p>
         <div className="flex justify-between items-center mt-4">
-          {/* FIX: Provide a default value of 0 if pricePerDay is missing */}
           <span className="font-bold text-lg">₱{(car.pricePerDay || 0).toLocaleString()}/day</span>
           <button onClick={() => handleBookNow(car, 'car')} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Book Now</button>
         </div>
@@ -53,12 +56,15 @@ const Home = () => {
 
   const renderTourCard = (tour) => (
     <div key={tour._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
-      <img src={(tour.images && tour.images[0]) || '/placeholder.png'} alt={tour.title} className="w-full h-48 object-cover"/>
+      <img
+        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${tour.images[0]}`}
+        alt={tour.title}
+        className="w-full h-48 object-cover"
+      />
       <div className="p-4">
         <h3 className="font-bold text-lg">{tour.title}</h3>
         <p className="text-gray-600 text-sm">{tour.destination}</p>
         <div className="flex justify-between items-center mt-4">
-           {/* FIX: Provide a default value of 0 if price is missing */}
           <span className="font-bold text-lg">₱{(tour.price || 0).toLocaleString()}/person</span>
           <button onClick={() => handleBookNow(tour, 'tour')} className="bg-green-600 text-white px-4 py-2 rounded-lg">Book Now</button>
         </div>
@@ -71,7 +77,6 @@ const Home = () => {
       <Hero />
       {error && <div className="bg-red-100 text-red-700 text-center p-4">{error}</div>}
 
-      {/* Featured Cars Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
@@ -88,7 +93,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Tours Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
            <div className="flex justify-between items-center mb-8">

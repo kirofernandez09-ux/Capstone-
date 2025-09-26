@@ -18,21 +18,20 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const response = await DataService.getCurrentUser();
-          // --- FIX STARTS HERE ---
-          // Check if the API call was successful and a user was returned
           if (response.success && response.user) {
             setUser(response.user);
             setIsAuthenticated(true);
           } else {
-            // If not successful, treat it as a failed validation
             console.error("Token validation failed:", response.message);
-            DataService.logout(); // Clear invalid token
+            DataService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
           }
-          // --- FIX ENDS HERE ---
         } catch (error) {
-          // This catch is a fallback, though the DataService handles most errors
           console.error("An unexpected error occurred during token validation:", error);
           DataService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
       setLoading(false);
@@ -43,9 +42,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await DataService.login({ email, password });
-      setUser(response.user);
-      setIsAuthenticated(true);
-      return { success: true, user: response.user };
+      if (response.success) {
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true, user: response.user };
+      } else {
+        throw new Error(response.message);
+      }
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -67,8 +70,12 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner component
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/" state={{ from: location, showLogin: true }} replace />;
@@ -85,8 +92,7 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
 export const UnifiedLoginPortal = ({ isOpen, onClose }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  
-  const [activeTab, setActiveTab] = useState('admin');
+
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -101,15 +107,14 @@ export const UnifiedLoginPortal = ({ isOpen, onClose }) => {
 
     if (result.success) {
       onClose();
-      // Redirect based on the role returned from the backend
-      const redirectPath = result.user.role === 'admin' ? '/owner/dashboard' : '/employee/dashboard';
+      const redirectPath = result.user.role === 'admin' ? '/owner' : '/employee';
       navigate(redirectPath, { replace: true });
     } else {
       setError(result.message || 'Login failed. Please check your credentials.');
     }
     setLoading(false);
   };
-  
+
   if (!isOpen) return null;
 
   return (

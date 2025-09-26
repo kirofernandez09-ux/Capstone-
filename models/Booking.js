@@ -2,14 +2,14 @@ import mongoose from 'mongoose';
 
 const auditTrailSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  action: { type: String, required: true }, // e.g., 'created', 'confirmed', 'payment_uploaded', 'cancelled'
+  action: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
   notes: { type: String }
 }, { _id: false });
 
 const bookingSchema = new mongoose.Schema({
   bookingReference: { type: String, required: true, unique: true, index: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Link to the user who booked
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   itemType: { type: String, enum: ['car', 'tour'], required: true },
   itemId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'itemModel' },
   itemModel: { type: String, required: true, enum: ['Car', 'Tour'] },
@@ -22,11 +22,13 @@ const bookingSchema = new mongoose.Schema({
   numberOfGuests: { type: Number, required: true, min: [1, 'Must have at least 1 guest'] },
   specialRequests: { type: String, maxlength: [500, 'Special requests cannot exceed 500 characters'] },
   totalPrice: { type: Number, required: true, min: [0, 'Total price cannot be negative'] },
-  paymentMethod: { type: String, enum: ['credit_card', 'gcash', 'paymaya', 'bank_transfer', 'cash'], required: true },
-  // Added fields for payment proof
+  paymentMethod: { type: String, enum: ['credit_card', 'gcash', 'paymaya', 'bank_transfer', 'cash'], default: 'bank_transfer' },
+  // --- CHANGE STARTS HERE ---
+  governmentIdUrl: { type: String }, // Field to store the uploaded ID URL
+  // --- CHANGE ENDS HERE ---
   paymentProof: {
-    url: { type: String }, // URL from Cloudinary/AWS S3
-    public_id: { type: String }, // ID from Cloudinary/AWS S3 for deletion
+    url: { type: String },
+    public_id: { type: String },
     uploadedAt: { type: Date }
   },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'], default: 'pending', index: true },
@@ -34,19 +36,16 @@ const bookingSchema = new mongoose.Schema({
   processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   processedAt: { type: Date },
   agreedToTerms: { type: Boolean, required: true, validate: { validator: (v) => v === true, message: 'Must agree to terms' }},
-  // Added audit trail
   auditTrail: [auditTrailSchema],
   archived: { type: Boolean, default: false }
 }, { timestamps: true });
 
-// Generate booking reference before saving
 bookingSchema.pre('save', function(next) {
   if (this.isNew) {
     const prefix = this.itemType === 'car' ? 'CAR' : 'TOUR';
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     this.bookingReference = `${prefix}-${timestamp}-${random}`;
-    // Add initial creation event to audit trail
     this.auditTrail.push({ action: 'created', notes: 'Booking created by customer.' });
   }
   next();

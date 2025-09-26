@@ -11,9 +11,13 @@ export const getAllBookings = async (req, res) => {
     if (req.user.role === 'customer') {
       query.user = req.user._id;
     }
-    const bookings = await Booking.find(query).populate('itemId').populate('user', 'firstName lastName').sort({ createdAt: -1 });
+    const bookings = await Booking.find(query)
+        .populate('itemId')
+        .populate('user', 'firstName lastName')
+        .sort({ createdAt: -1 });
     res.json({ success: true, data: bookings });
   } catch (error) {
+    console.error('Error fetching bookings:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -24,7 +28,6 @@ export const createBooking = async (req, res) => {
         const { itemType, itemId, startDate, endDate, numberOfGuests, ...guestInfo } = req.body;
         let item, totalPrice = 0;
 
-        // Validate item and calculate price
         if (itemType === 'car') {
             item = await Car.findById(itemId);
             if (!item || !item.isAvailable) return res.status(400).json({ success: false, message: 'Car not available' });
@@ -39,49 +42,37 @@ export const createBooking = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid item type' });
         }
 
-        // For registered users, link their account
-        let userId = null;
-        if (req.user && req.user.role === 'customer') {
-            userId = req.user._id;
-        } else {
-            // Optional: for guests, check if an account with this email exists
-            const existingUser = await User.findOne({ email: guestInfo.email });
-            if(existingUser) userId = existingUser._id;
-        }
+        let userId = req.user ? req.user._id : null;
 
         const bookingData = {
           ...guestInfo,
           user: userId,
           itemType,
           itemId,
+          itemModel: itemType.charAt(0).toUpperCase() + itemType.slice(1),
           startDate,
           endDate: itemType === 'car' ? endDate : undefined,
           numberOfGuests,
           totalPrice,
-          agreedToTerms: true, // Assuming this is checked on the frontend
+          paymentProof: {
+            url: req.body.paymentProofUrl
+          }
         };
 
         const booking = new Booking(bookingData);
         await booking.save();
-
-        // If a user account was linked, add this booking to their record
-        if (userId) {
-            await User.findByIdAndUpdate(userId, { $push: { bookings: booking._id } });
-        }
-
+        
         await EmailService.sendBookingConfirmation(booking);
 
-        // Notify admin dashboard in real-time
         req.app.get('io').emit('new-booking', booking);
 
         res.status(201).json({ success: true, data: booking });
     } catch (error) {
+        console.error('Error creating booking:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-
-// Update booking status
 export const updateBookingStatus = async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
@@ -94,7 +85,6 @@ export const updateBookingStatus = async (req, res) => {
     booking.processedBy = req.user.id;
     booking.processedAt = Date.now();
 
-    // Add to audit trail
     booking.auditTrail.push({
         user: req.user.id,
         action: `status_changed_to_${status}`,
@@ -113,7 +103,6 @@ export const updateBookingStatus = async (req, res) => {
   }
 };
 
-// Upload payment proof
 export const uploadPaymentProof = async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id);
@@ -124,10 +113,8 @@ export const uploadPaymentProof = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No file uploaded.' });
         }
 
-        // Assuming file upload middleware provides file.path (url) and file.filename (public_id for cloudinary)
         booking.paymentProof = {
-            url: req.file.path,
-            public_id: req.file.filename,
+            url: `/uploads/documents/${req.file.filename}`,
             uploadedAt: Date.now()
         };
         booking.auditTrail.push({ user: req.user?.id || booking.user, action: 'payment_proof_uploaded' });
@@ -140,7 +127,6 @@ export const uploadPaymentProof = async (req, res) => {
     }
 };
 
-// Archive a booking
 export const archiveBooking = async (req, res) => {
     try {
         const booking = await Booking.findByIdAndUpdate(req.params.id, { archived: true }, { new: true });

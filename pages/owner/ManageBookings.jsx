@@ -111,7 +111,7 @@ const ManageBookings = () => {
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">₱{booking.totalPrice.toLocaleString()}</td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm"><StatusBadge status={booking.status} /></td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-                    <button onClick={() => { setSelectedBooking(booking); setAdminNotes(''); }} className="text-blue-600 hover:text-blue-900"><Eye /></button>
+                    <button onClick={() => { setSelectedBooking(booking); setAdminNotes(booking.adminNotes || ''); }} className="text-blue-600 hover:text-blue-900"><Eye /></button>
                   </td>
                 </tr>
               ))
@@ -131,7 +131,10 @@ const ManageBookings = () => {
             {/* Display booking details here */}
             <p><strong>Reference:</strong> {selectedBooking.bookingReference}</p>
             <p><strong>Customer:</strong> {selectedBooking.firstName} {selectedBooking.lastName}</p>
-            
+            <p><strong>Email:</strong> {selectedBooking.email}</p>
+            <p><strong>Phone:</strong> {selectedBooking.phone}</p>
+            <p><strong>Status:</strong> <StatusBadge status={selectedBooking.status} /></p>
+
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700">Admin Notes (optional)</label>
               <textarea
