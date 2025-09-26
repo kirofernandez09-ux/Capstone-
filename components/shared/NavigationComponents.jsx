@@ -43,7 +43,7 @@ export const Navbar = ({ onCustomerLogin, onStaffLogin }) => {
     let path = '/';
     if(user?.role === 'admin') path = '/owner/dashboard';
     if(user?.role === 'employee') path = '/employee/dashboard';
-    if(user?.role === 'customer') path = '/my-bookings';
+    if(user?.role === 'customer') path = '/my-bookings'; // --- CORRECTED customer path ---
     navigate(path);
     setUserMenuOpen(false);
   };

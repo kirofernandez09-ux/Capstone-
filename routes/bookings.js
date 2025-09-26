@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Route to create a booking (data only)
 // Supports both registered users and guests (auth is optional here)
-router.route('/').post(auth, createBooking);
+router.route('/').post(createBooking);
 
 // Authenticated routes below
 router.use(auth);
@@ -32,4 +32,3 @@ router.route('/:id/payment-proof')
     .post(authorize('customer'), upload.single('paymentProof'), uploadPaymentProof);
 
 export default router;
-

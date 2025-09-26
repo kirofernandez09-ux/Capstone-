@@ -81,7 +81,7 @@ function App() {
     );
   }
 
-  return (
+return (
     <AuthProvider>
       <div className="flex flex-col min-h-screen">
         <Navbar 
@@ -97,7 +97,10 @@ function App() {
             <Route path="/cars" element={<Cars />} />
             <Route path="/tours" element={<Tours />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/my-bookings" element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>} />
+            <Route 
+              path="/my-bookings" 
+              element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>} 
+            />
 
             {/* Admin Protected Routes */}
             <Route path="/owner" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
@@ -112,11 +115,17 @@ function App() {
               <Route path="content-management" element={<ContentManagement />} />
             </Route>
 
-            {/* Employee Protected Routes */}
+            {/* --- REVISED Employee Protected Routes --- */}
             <Route path="/employee" element={<ProtectedRoute requiredRole="employee"><EmployeeLayout /></ProtectedRoute>}>
                <Route index element={null} />
                <Route path="dashboard" element={null} />
+               {/* These routes allow employees to use the same components as admins, but via their own protected path */}
+               <Route path="manage-cars" element={<ManageCars />} />
+               <Route path="manage-tours" element={<ManageTours />} />
                <Route path="manage-bookings" element={<ManageBookings />} />
+               <Route path="messages" element={<Messages />} />
+               <Route path="reports" element={<Reports />} />
+               <Route path="content-management" element={<ContentManagement />} />
             </Route>
 
             <Route path="/unauthorized" element={<div>Access Denied</div>} />

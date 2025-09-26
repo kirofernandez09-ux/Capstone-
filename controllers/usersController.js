@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import bcrypt from 'bcryptjs'; // --- ADD this import ---
 
 export const getAllEmployees = async (req, res) => {
   try {
@@ -11,12 +12,35 @@ export const getAllEmployees = async (req, res) => {
 
 export const createEmployee = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, phone, position, permissions } = req.body;
-        const employee = new User({ firstName, lastName, email, password, phone, position, permissions, role: 'employee' });
+        const { firstName, lastName, email, password, phone, position, permissions, role } = req.body;
+        
+        // --- ADD explicit password hashing before saving ---
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Password is required.' });
+        }
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        const newRole = (role === 'admin' || role === 'employee') ? role : 'employee';
+
+        const employee = new User({ 
+            firstName, 
+            lastName, 
+            email, 
+            password: hashedPassword, // Use the hashed password
+            phone, 
+            position, 
+            permissions, 
+            role: newRole 
+        });
+        
         await employee.save();
         employee.password = undefined;
         res.status(201).json({ success: true, data: employee });
     } catch (error) {
+        // Handle potential duplicate email error
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+        }
         res.status(400).json({ success: false, message: error.message });
     }
 };
@@ -24,6 +48,10 @@ export const createEmployee = async (req, res) => {
 export const updateEmployee = async (req, res) => {
     try {
         const { password, ...updateData } = req.body;
+        if (updateData.role && !['admin', 'employee'].includes(updateData.role)) {
+            delete updateData.role;
+        }
+        
         const employee = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
         res.json({ success: true, data: employee });

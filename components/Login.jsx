@@ -22,13 +22,13 @@ export const AuthProvider = ({ children }) => {
             setUser(response.user);
             setIsAuthenticated(true);
           } else {
-            console.error("Token validation failed:", response.message);
+            // --- CLEAR session if token is invalid ---
             DataService.logout();
             setUser(null);
             setIsAuthenticated(false);
           }
         } catch (error) {
-          console.error("An unexpected error occurred during token validation:", error);
+          // --- CLEAR session on any error ---
           DataService.logout();
           setUser(null);
           setIsAuthenticated(false);
@@ -38,6 +38,12 @@ export const AuthProvider = ({ children }) => {
     };
     validateToken();
   }, []);
+
+  const logout = () => {
+    DataService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   const login = async (email, password) => {
     try {
@@ -50,6 +56,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(response.message);
       }
     } catch (error) {
+      logout();
       return { success: false, message: error.message };
     }
   };
@@ -61,12 +68,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, message: error.message };
     }
-  };
-
-  const logout = () => {
-    DataService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
   };
 
   const value = { user, isAuthenticated, loading, login, logout, register };
@@ -83,7 +84,7 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
   const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner component
+    return <div>Loading...</div>;
   }
 
   if (!isAuthenticated) {
@@ -117,7 +118,7 @@ export const StaffLoginPortal = ({ isOpen, onClose }) => {
     if (result.success) {
       if (result.user.role === 'admin' || result.user.role === 'employee') {
         onClose();
-        const redirectPath = result.user.role === 'admin' ? '/owner' : '/employee';
+        const redirectPath = result.user.role === 'admin' ? '/owner/dashboard' : '/employee/dashboard';
         navigate(redirectPath, { replace: true });
       } else {
         setError('Access denied. This portal is for staff only.');

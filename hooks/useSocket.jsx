@@ -60,6 +60,7 @@ export const useSocket = () => {
   }, []);
 
   return {
+    socket, // --- ADD THIS LINE ---
     connected,
     notifications,
     addNotification,

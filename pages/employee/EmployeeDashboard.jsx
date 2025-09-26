@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Car, MapPin, Calendar, MessageSquare, LogOut, Menu, X, Shield
+  LayoutDashboard, Car, MapPin, Calendar, MessageSquare, LogOut, Menu, X, FileText, Settings
 } from 'lucide-react';
 import { useAuth } from '../../components/Login.jsx';
 
@@ -16,20 +16,25 @@ const EmployeeDashboard = () => {
     navigate('/');
   };
 
-  // This is the key change: Navigation is built based on the user's permissions
-  const availableNavItems = [
-    { name: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard, permission: true },
-    { name: 'Manage Cars', href: '/employee/manage-cars', icon: Car, permission: user?.permissions?.canManageCars },
-    { name: 'Manage Tours', href: '/employee/manage-tours', icon: MapPin, permission: user?.permissions?.canManageTours },
-    { name: 'Manage Bookings', href: '/employee/manage-bookings', icon: Calendar, permission: user?.permissions?.canManageBookings },
-    { name: 'Messages', href: '/employee/messages', icon: MessageSquare, permission: user?.permissions?.canViewMessages },
+  // --- CORRECTED navigation links for employees ---
+  const allNavItems = [
+    { name: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard, module: 'dashboard' },
+    { name: 'Manage Cars', href: '/employee/manage-cars', icon: Car, module: 'cars' },
+    { name: 'Manage Tours', href: '/employee/manage-tours', icon: MapPin, module: 'tours' },
+    { name: 'Manage Bookings', href: '/employee/manage-bookings', icon: Calendar, module: 'bookings' },
+    { name: 'Messages', href: '/employee/messages', icon: MessageSquare, module: 'messages' },
+    { name: 'Reports', href: '/employee/reports', icon: FileText, module: 'reports' },
+    { name: 'Content', href: '/employee/content-management', icon: Settings, module: 'content' },
   ];
 
-  const navigation = availableNavItems.filter(item => item.permission);
+  // Filter navigation based on user's permissions
+  const navigation = allNavItems.filter(item => {
+    if (item.module === 'dashboard') return true; // Everyone gets a dashboard
+    return user?.permissions?.some(p => p.module === item.module);
+  });
   
   const currentNavItem = navigation.find(item => location.pathname.startsWith(item.href));
   
-  // A simple view for the main employee dashboard page
   const renderDashboardView = () => (
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold">Employee Dashboard</h2>
@@ -73,11 +78,10 @@ const EmployeeDashboard = () => {
                 <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden mr-4 text-gray-600"><Menu size={24} /></button>
                 <h1 className="text-xl font-semibold">{currentNavItem?.name || 'Dashboard'}</h1>
             </div>
-            {/* You can add more header items here */}
         </header>
         
         <main className="flex-1 overflow-y-auto bg-gray-100 p-6">
-           {location.pathname === '/employee/dashboard' ? renderDashboardView() : <Outlet />}
+           {location.pathname === '/employee' || location.pathname === '/employee/dashboard' ? renderDashboardView() : <Outlet />}
         </main>
       </div>
     </div>

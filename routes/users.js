@@ -5,6 +5,7 @@ import { auth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// --- ADDED auth and authorize middleware to all employee routes ---
 router.route('/employees').get(auth, authorize('admin'), getAllEmployees).post(auth, authorize('admin'), createEmployee);
 router.route('/employees/:id').put(auth, authorize('admin'), updateEmployee).delete(auth, authorize('admin'), deleteEmployee);
 router.route('/employees/:id/password').put(auth, authorize('admin'), changeEmployeePassword);

@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../components/Login.jsx';
 import DataService from '../../components/services/DataService.jsx';
 import BookingCalendar from './BookingCalendar';
+import { useSocket } from '../../hooks/useSocket.jsx';
 
 // Re-usable helper components
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -17,9 +18,10 @@ const AdminDashboard = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { socket } = useSocket();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [dashboardData, setDashboardData] = useState({ summary: {}, recentBookings: [], recentMessages: [] });
+    const [dashboardData, setDashboardData] = useState(null); // --- MODIFIED initial state ---
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -53,8 +55,24 @@ const AdminDashboard = () => {
     useEffect(() => {
         if (isDashboardPage) {
             fetchDashboardData();
+
+            socket.on('new-booking', (newBooking) => {
+                setDashboardData(prevData => ({
+                    ...prevData,
+                    summary: {
+                        ...prevData.summary,
+                        totalBookings: prevData.summary.totalBookings + 1,
+                        pendingBookings: prevData.summary.pendingBookings + 1,
+                    },
+                    recentBookings: [newBooking, ...prevData.recentBookings.slice(0, 4)],
+                }));
+            });
+
+            return () => {
+                socket.off('new-booking');
+            };
         }
-    }, [isDashboardPage]);
+    }, [isDashboardPage, socket]);
 
     const handleLogout = () => {
         logout();
@@ -72,7 +90,8 @@ const AdminDashboard = () => {
 
             {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
             
-            {loading ? <p>Loading statistics...</p> : (
+            {/* --- ADDED conditional rendering check --- */}
+            {loading ? <p>Loading statistics...</p> : dashboardData && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     {/* Stat Cards */}
                     <StatCard title="Total Cars" value={dashboardData.summary.totalCars || 0} icon={Car} />
@@ -91,10 +110,13 @@ const AdminDashboard = () => {
 
             
             {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivityList title="Recent Bookings" items={dashboardData.recentBookings} type="booking" />
-                <RecentActivityList title="Recent Messages" items={dashboardData.recentMessages} type="message" />
-            </div>
+            {/* --- ADDED conditional rendering check --- */}
+            {dashboardData && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <RecentActivityList title="Recent Bookings" items={dashboardData.recentBookings} type="booking" />
+                    <RecentActivityList title="Recent Messages" items={dashboardData.recentMessages} type="message" />
+                </div>
+            )}
         </div>
     );
 

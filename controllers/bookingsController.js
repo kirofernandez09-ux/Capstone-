@@ -79,6 +79,7 @@ export const createBooking = async (req, res) => {
         
         await EmailService.sendBookingConfirmation(booking);
 
+        // --- ADD THIS LINE ---
         req.app.get('io').emit('new-booking', booking);
 
         res.status(201).json({ success: true, data: booking });
@@ -138,4 +139,3 @@ export const uploadPaymentProof = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error during upload.' });
     }
 };
-

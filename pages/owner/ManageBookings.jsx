@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Check, X, XCircle } from 'lucide-react';
 import DataService from '../../components/services/DataService.jsx';
+import { useSocket } from '../../hooks/useSocket.jsx'; // --- IMPORT useSocket ---
 
 const ManageBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -10,10 +11,7 @@ const ManageBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  const { socket } = useSocket(); // --- USE the useSocket hook ---
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -26,6 +24,22 @@ const ManageBookings = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchBookings();
+
+    // --- ADD socket listener for new bookings ---
+    socket.on('new-booking', (newBooking) => {
+      setBookings(prevBookings => [newBooking, ...prevBookings]);
+    });
+
+    return () => {
+      socket.off('new-booking');
+    };
+    // --- END of socket listener ---
+  }, [socket]);
+
+
 
   const handleStatusUpdate = async (newStatus) => {
     if (!selectedBooking) return;

@@ -43,11 +43,13 @@ const DataService = {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
       if (response.data.token) {
+        // --- ENSURE token is set before returning ---
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       return response.data;
     } catch (error) {
+      // --- REMOVED automatic logout on failed login for better user experience ---
       throw new Error(error.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   },
@@ -156,6 +158,52 @@ const DataService = {
   // ADMIN & EMPLOYEE FUNCTIONS (for completeness)
   // ===============================================
 
+  fetchAllMessages: async () => {
+    try {
+        const response = await axios.get(`${API_URL}/messages`, { headers: getAuthHeader() });
+        return response.data;
+    } catch (error) {
+        return handleError(error, 'Failed to fetch messages.');
+    }
+  },
+
+  fetchAllEmployees: async () => {
+      try {
+          const response = await axios.get(`${API_URL}/users/employees`, { headers: getAuthHeader() });
+          return response.data;
+      } catch (error) {
+          return handleError(error, 'Failed to fetch employees.');
+      }
+  },
+  
+  // --- ADDED Employee Management Functions ---
+  createEmployee: async (employeeData) => {
+    try {
+      const response = await axios.post(`${API_URL}/users/employees`, employeeData, { headers: getAuthHeader() });
+      return response.data;
+    } catch (error) {
+      return handleError(error, 'Failed to create employee.');
+    }
+  },
+
+  updateEmployee: async (id, employeeData) => {
+    try {
+      const response = await axios.put(`${API_URL}/users/employees/${id}`, employeeData, { headers: getAuthHeader() });
+      return response.data;
+    } catch (error) {
+      return handleError(error, 'Failed to update employee.');
+    }
+  },
+
+  deleteEmployee: async (id) => {
+    try {
+      const response = await axios.delete(`${API_URL}/users/employees/${id}`, { headers: getAuthHeader() });
+      return response.data;
+    } catch (error) {
+      return handleError(error, 'Failed to delete employee.');
+    }
+  },
+  
   fetchAllBookings: async () => {
     try {
       const response = await axios.get(`${API_URL}/bookings`, { headers: getAuthHeader() });
@@ -180,7 +228,6 @@ const DataService = {
       return handleError(error);
     }
   },
-  // --- Content Management ---
   fetchContent: async (type) => {
     try {
       const response = await axios.get(`${API_URL}/content/${type}`);
@@ -200,4 +247,3 @@ const DataService = {
 };
 
 export default DataService;
-

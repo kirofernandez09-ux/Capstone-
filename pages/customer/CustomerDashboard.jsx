@@ -5,9 +5,11 @@ import { Upload, Car, MapPin, X, CheckCircle, Clock, AlertCircle, Eye, FileUp, B
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import BookingModal from '../../components/BookingModal.jsx';
+import { useSocket } from '../../hooks/useSocket.jsx'; // --- IMPORT useSocket ---
 
 const CustomerDashboard = () => {
     const { user, isAuthenticated, logout } = useAuth();
+    const { notifications } = useSocket(); // --- USE the useSocket hook ---
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,7 +17,6 @@ const CustomerDashboard = () => {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [feedback, setFeedback] = useState({ rating: 0, comment: '' });
-    const [notifications, setNotifications] = useState([]);
 
     const fetchBookings = useCallback(async () => {
         if (isAuthenticated) {
@@ -25,11 +26,6 @@ const CustomerDashboard = () => {
                 const response = await DataService.fetchUserBookings();
                 if (response.success) {
                     setBookings(response.data);
-                    // Mock notifications
-                    setNotifications([
-                        { id: 1, message: `Your booking for ${response.data[0]?.itemId.title || 'a service'} has been confirmed!`, type: 'success' },
-                        { id: 2, message: 'Your payment proof was rejected (reason: blurry photo).', type: 'error' }
-                    ]);
                 } else {
                     throw new Error(response.message || "Could not fetch bookings.");
                 }
