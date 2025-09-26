@@ -3,32 +3,33 @@ import {
     getAllBookings,
     createBooking,
     updateBookingStatus,
-    uploadPaymentProof,
-    archiveBooking
+    getMyBookings,
+    uploadPaymentProof
 } from '../controllers/bookingsController.js';
-import { auth } from '../middleware/auth.js';
-import { checkPermission } from '../middleware/permission.js';
-import { upload } from '../middleware/upload.js'; // Corrected import
+import { auth, authorize } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js'; 
 
 const router = express.Router();
 
-// Public route to create a new booking
-router.route('/').post(createBooking);
+// Route to create a booking (data only)
+// Supports both registered users and guests (auth is optional here)
+router.route('/').post(auth, createBooking);
 
-// Authenticated routes
+// Authenticated routes below
 router.use(auth);
 
 router.route('/')
-    .get(getAllBookings); // Customers get their own, staff get all
+    .get(authorize('admin', 'employee'), getAllBookings);
+    
+router.route('/my-bookings')
+    .get(authorize('customer'), getMyBookings);
 
 router.route('/:id/status')
-    .put(checkPermission('bookings', 'write'), updateBookingStatus);
+    .put(authorize('admin', 'employee'), updateBookingStatus);
 
-// Use the 'upload' middleware specifically for this route
+// Route for customers to upload payment proof to an existing booking
 router.route('/:id/payment-proof')
-    .post(upload.single('paymentProof'), uploadPaymentProof);
-
-router.route('/:id/archive')
-    .patch(checkPermission('bookings', 'full'), archiveBooking);
+    .post(authorize('customer'), upload.single('paymentProof'), uploadPaymentProof);
 
 export default router;
+

@@ -1,33 +1,40 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../components/Login.jsx';
 import DataService from '../../components/services/DataService.jsx';
-import { Upload, Car, MapPin, X, CheckCircle, Clock, AlertCircle, Eye, FileUp, Building, User as UserIcon } from 'lucide-react';
+import { Upload, Car, MapPin, X, CheckCircle, Clock, AlertCircle, Eye, FileUp, Building, User as UserIcon, Star, Bell, Settings, LogOut, Calendar as CalendarIcon, MessageSquare, BarChart2 } from 'lucide-react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import BookingModal from '../../components/BookingModal.jsx';
 
 const CustomerDashboard = () => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, logout } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [selectedBooking, setSelectedBooking] = useState(null);
-    const [paymentProofFile, setPaymentProofFile] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const fileInputRef = useRef(null);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [feedback, setFeedback] = useState({ rating: 0, comment: '' });
+    const [notifications, setNotifications] = useState([]);
 
     const fetchBookings = useCallback(async () => {
         if (isAuthenticated) {
             setLoading(true);
             setError(null);
             try {
-                const response = await DataService.fetchAllBookings();
+                const response = await DataService.fetchUserBookings();
                 if (response.success) {
                     setBookings(response.data);
+                    // Mock notifications
+                    setNotifications([
+                        { id: 1, message: `Your booking for ${response.data[0]?.itemId.title || 'a service'} has been confirmed!`, type: 'success' },
+                        { id: 2, message: 'Your payment proof was rejected (reason: blurry photo).', type: 'error' }
+                    ]);
                 } else {
                     throw new Error(response.message || "Could not fetch bookings.");
                 }
             } catch (err) {
                 setError(err.message);
-                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -40,195 +47,174 @@ const CustomerDashboard = () => {
         fetchBookings();
     }, [fetchBookings]);
 
-    const handleFileUpload = async () => {
-        if (!paymentProofFile || !selectedBooking) return;
-        setIsUploading(true);
-        try {
-            // NOTE: The DataService needs a method for this. Assuming `uploadPaymentProof(bookingId, file)`
-            const response = await DataService.uploadPaymentProof(selectedBooking._id, paymentProofFile);
-            if(response.success) {
-                alert('Upload successful! Our team will review it shortly.');
-                setSelectedBooking(null);
-                setPaymentProofFile(null);
-                fetchBookings();
-            } else {
-                throw new Error(response.message || 'Upload failed.');
-            }
-        } catch (error) {
-            alert(`Upload failed: ${error.message}`);
-        } finally {
-            setIsUploading(false);
+    const handleFeedbackSubmit = async () => {
+        if (feedback.rating > 0 && selectedBooking) {
+            await DataService.submitFeedback({ ...feedback, bookingId: selectedBooking._id, item: selectedBooking.itemId._id, itemModel: selectedBooking.itemModel });
+            alert('Feedback submitted!');
+            setSelectedBooking(null);
+            fetchBookings();
         }
     };
 
-    const handleFileSelect = () => {
-        fileInputRef.current?.click();
-    };
-
-
-    const filteredBookings = bookings.filter(booking => {
-        if (activeTab === 'all') return true;
-        return booking.itemType === activeTab;
-    });
-
-    const StatusBadge = ({ status }) => {
-        const styles = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            confirmed: 'bg-green-100 text-green-800',
-            rejected: 'bg-red-100 text-red-800',
-            completed: 'bg-blue-100 text-blue-800',
-            cancelled: 'bg-gray-100 text-gray-800',
-        };
-        const Icon = status === 'pending' ? Clock : status === 'confirmed' ? CheckCircle : AlertCircle;
-        return (
-            <span className={`px-2.5 py-1 text-xs font-semibold rounded-full inline-flex items-center gap-1.5 ${styles[status] || styles.pending}`}>
-                <Icon size={14} /> {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
-        );
-    };
+    const calendarEvents = bookings.map(b => ({
+      title: b.itemId?.title || `${b.itemId?.brand} ${b.itemId?.model}`,
+      start: b.startDate,
+      end: b.endDate,
+      backgroundColor: b.status === 'confirmed' ? '#10B981' : b.status === 'pending' ? '#F59E0B' : '#EF4444',
+      borderColor: b.status === 'confirmed' ? '#10B981' : b.status === 'pending' ? '#F59E0B' : '#EF4444'
+    }));
     
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
+    const stats = {
+        total: bookings.length,
+        active: bookings.filter(b => b.status === 'confirmed').length,
+        pending: bookings.filter(b => b.status === 'pending').length,
+        cancelled: bookings.filter(b => ['cancelled', 'rejected'].includes(b.status)).length
+    };
+
+    if (loading && isAuthenticated) {
+        return <div className="text-center p-10">Loading your dashboard...</div>;
     }
 
-
+    // Guest View
     if (!isAuthenticated) {
-        return <div className="text-center p-10">Please log in to view your dashboard.</div>;
+        return (
+            <div className="max-w-4xl mx-auto p-8">
+                <h1 className="text-3xl font-bold text-center mb-6">Book as a Guest</h1>
+                <BookingModal isOpen={true} onClose={() => {}} guestMode={true} />
+            </div>
+        );
     }
-
+    
+    // Registered User View
     return (
         <div className="bg-gray-50 min-h-screen">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900">My Dashboard</h1>
-                    <p className="text-lg text-gray-600 mt-2">Welcome back, {user?.firstName}! Here are your bookings.</p>
+                <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+                    <h1 className="text-4xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
+                    <p className="text-lg text-gray-600 mt-2">Here's an overview of your travels with us.</p>
                 </div>
                 
-                {/* Tabs */}
-                <div className="flex border-b border-gray-200 mb-6">
-                    <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>All Bookings</button>
-                    <button onClick={() => setActiveTab('car')} className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'car' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Car Rentals</button>
-                    <button onClick={() => setActiveTab('tour')} className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'tour' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Tour Packages</button>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <StatCard title="Total Bookings" value={stats.total} icon={BarChart2} />
+                    <StatCard title="Upcoming Trips" value={stats.active} icon={Car} />
+                    <StatCard title="Pending Payments" value={stats.pending} icon={Clock} />
+                    <StatCard title="Cancelled/Rejected" value={stats.cancelled} icon={X} />
                 </div>
 
-                {loading ? <div className="text-center p-10">Loading your bookings...</div> : 
-                 error ? <div className="text-center p-10 text-red-500">{error}</div> : (
-                    <div className="space-y-6">
-                        {filteredBookings.length > 0 ? filteredBookings.map(booking => (
-                            <div key={booking._id} className="bg-white p-5 rounded-xl shadow-md border border-gray-200 transition-shadow hover:shadow-lg">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center ${booking.itemType === 'car' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                                            {booking.itemType === 'car' ? <Car className="w-6 h-6 text-blue-600"/> : <MapPin className="w-6 h-6 text-green-600"/>}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-800">{booking.itemId?.title || `${booking.itemId?.brand} ${booking.itemId?.model}` || 'Service Details Unavailable'}</p>
-                                            <p className="text-sm text-gray-500 font-mono">{booking.bookingReference}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-6 w-full md:w-auto">
-                                        <div className="text-sm">
-                                            <p className="font-semibold text-gray-500">Date</p>
-                                            <p className="text-gray-800">{formatDate(booking.startDate)}</p>
-                                        </div>
-                                        <div className="font-bold text-lg text-gray-800">₱{booking.totalPrice.toLocaleString()}</div>
-                                        <div><StatusBadge status={booking.status} /></div>
-                                        <button onClick={() => setSelectedBooking(booking)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-full transition-colors">
-                                            <Eye size={20}/>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                                <p className="text-lg font-medium text-gray-700">No {activeTab !== 'all' ? activeTab : ''} bookings found.</p>
-                                <p className="text-gray-500 mt-2">Ready for an adventure? Book a service to see it here!</p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm">
+                    {['dashboard', 'bookings', 'payments', 'notifications', 'calendar', 'feedback', 'settings'].map(tab => (
+                       <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-3 text-sm font-medium transition-colors capitalize ${activeTab === tab ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                           {tab.replace('_', ' & ')}
+                       </button>
+                    ))}
+                </div>
 
-                {/* Booking Details & Upload Modal */}
-                {selectedBooking && (
-                    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 transition-opacity">
-                        <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl">
-                            <div className="flex justify-between items-center mb-4 pb-4 border-b">
-                                <div>
-                                    <h3 className="text-2xl font-bold text-gray-900">Booking Details</h3>
-                                    <p className="text-gray-500 font-mono">{selectedBooking.bookingReference}</p>
-                                </div>
-                                <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-gray-600"><X /></button>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div>
-                                    <h4 className="font-semibold text-gray-500 text-sm mb-2">CUSTOMER</h4>
-                                    <div className="flex items-center gap-3">
-                                        <UserIcon className="w-5 h-5 text-gray-400" />
-                                        <span className="text-gray-800">{selectedBooking.firstName} {selectedBooking.lastName}</span>
-                                    </div>
-                                </div>
-                                 <div>
-                                    <h4 className="font-semibold text-gray-500 text-sm mb-2">SERVICE</h4>
-                                    <div className="flex items-center gap-3">
-                                        <Building className="w-5 h-5 text-gray-400" />
-                                        <span className="text-gray-800">{selectedBooking.itemId?.title || `${selectedBooking.itemId?.brand} ${selectedBooking.itemId?.model}`}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                                <h4 className="font-semibold text-gray-500 text-sm mb-3">ADMIN NOTES</h4>
-                                <p className="text-gray-700 italic">
-                                    {selectedBooking.adminNotes || "No notes from the admin for this booking."}
-                                </p>
-                            </div>
-                            
-                            {selectedBooking.status === 'pending' && (
-                                <div className="border-t pt-6">
-                                    <h4 className="font-semibold text-gray-800 mb-3">Action Required: Upload Payment Proof</h4>
-                                    <p className="text-sm text-gray-600 mb-4">To confirm your booking, please upload a clear image of your payment receipt (e.g., screenshot of GCash transaction, bank transfer confirmation).</p>
-                                    
-                                    <input type="file" ref={fileInputRef} onChange={(e) => setPaymentProofFile(e.target.files[0])} className="hidden" accept="image/png, image/jpeg, image/jpg"/>
-                                    
-                                    <div className="flex items-center gap-4">
-                                        <button onClick={handleFileSelect} className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors">
-                                            <FileUp size={16} /> Choose File
-                                        </button>
-                                        {paymentProofFile && <span className="text-sm text-gray-700 truncate">{paymentProofFile.name}</span>}
-                                    </div>
-
-                                    <button onClick={handleFileUpload} disabled={!paymentProofFile || isUploading} className="mt-4 w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed">
-                                        {isUploading ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                Uploading...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload size={18} /> Submit Payment Proof
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-
-                            {selectedBooking.paymentProof?.url && (
-                                <div className="border-t pt-6">
-                                     <h4 className="font-semibold text-gray-800 mb-3">Payment Proof Submitted</h4>
-                                     <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg">Our team is reviewing your payment. You will be notified once it's confirmed.</p>
-                                     <a href={selectedBooking.paymentProof.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm mt-2 inline-block hover:underline">View Uploaded File</a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                <div className="bg-white p-6 rounded-b-lg shadow-md">
+                   {activeTab === 'bookings' && <BookingsList bookings={bookings} onSelectBooking={setSelectedBooking} />}
+                   {activeTab === 'calendar' && <BookingCalendar events={calendarEvents} />}
+                   {activeTab === 'feedback' && <FeedbackSection bookings={bookings} onFeedbackSubmit={handleFeedbackSubmit} setFeedback={setFeedback} feedback={feedback} setSelectedBooking={setSelectedBooking}/>}
+                   {activeTab === 'notifications' && <NotificationsPanel notifications={notifications} />}
+                   {activeTab === 'settings' && <AccountSettings user={user} />}
+                </div>
             </div>
         </div>
     );
 };
+
+// Sub-components for clarity
+const StatCard = ({ title, value, icon: Icon }) => (
+    <div className="bg-white p-5 rounded-lg shadow-md flex items-center gap-4">
+        <div className="bg-blue-100 p-3 rounded-full">
+            <Icon className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+            <p className="text-2xl font-bold text-gray-800">{value}</p>
+            <p className="text-sm text-gray-500">{title}</p>
+        </div>
+    </div>
+);
+
+const BookingsList = ({ bookings, onSelectBooking }) => (
+    <div>
+        <h2 className="text-2xl font-bold mb-4">My Bookings</h2>
+        <div className="space-y-4">
+            {bookings.map(booking => (
+                <div key={booking._id} className="p-4 border rounded-lg flex justify-between items-center">
+                    <div>
+                        <p className="font-bold">{booking.itemId?.title || `${booking.itemId?.brand} ${booking.itemId?.model}`}</p>
+                        <p className="text-sm text-gray-500">{booking.bookingReference}</p>
+                    </div>
+                    <div>
+                         <p className="font-semibold">₱{booking.totalPrice.toLocaleString()}</p>
+                         <span className={`px-2 py-1 text-xs rounded-full ${
+                             booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                             booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                             'bg-red-100 text-red-800'
+                         }`}>{booking.status}</span>
+                    </div>
+                    <button onClick={() => onSelectBooking(booking)} className="bg-gray-200 px-3 py-1 rounded">Details</button>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const BookingCalendar = ({ events }) => (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Booking Calendar</h2>
+      <FullCalendar
+          plugins={[dayGridPlugin]}
+          initialView="dayGridMonth"
+          events={events}
+      />
+    </div>
+);
+
+const FeedbackSection = ({ bookings, onFeedbackSubmit, setFeedback, feedback, setSelectedBooking }) => (
+     <div>
+        <h2 className="text-2xl font-bold mb-4">Feedback & Reviews</h2>
+        <select onChange={(e) => setSelectedBooking(bookings.find(b => b._id === e.target.value))} className="p-2 border rounded w-full mb-4">
+            <option value="">Select a completed booking to review</option>
+            {bookings.filter(b => b.status === 'completed').map(b => (
+                <option key={b._id} value={b._id}>{b.itemId?.title || `${b.itemId?.brand} ${b.itemId?.model}`}</option>
+            ))}
+        </select>
+        <div className="flex mb-4">
+            {[1, 2, 3, 4, 5].map(star => (
+                <Star key={star} onClick={() => setFeedback({ ...feedback, rating: star })} className={`cursor-pointer ${feedback.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`} />
+            ))}
+        </div>
+        <textarea value={feedback.comment} onChange={(e) => setFeedback({ ...feedback, comment: e.target.value })} className="p-2 border rounded w-full" placeholder="Share your experience..."></textarea>
+        <button onClick={onFeedbackSubmit} className="bg-blue-600 text-white px-4 py-2 rounded mt-4">Submit Review</button>
+    </div>
+);
+
+const NotificationsPanel = ({ notifications }) => (
+    <div>
+        <h2 className="text-2xl font-bold mb-4">Notifications</h2>
+        <div className="space-y-3">
+            {notifications.map(notif => (
+                <div key={notif.id} className={`p-4 rounded-lg flex items-start gap-3 ${notif.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    {notif.type === 'success' ? <CheckCircle className="w-5 h-5 text-green-600"/> : <AlertCircle className="w-5 h-5 text-red-600"/>}
+                    <p className="text-sm">{notif.message}</p>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const AccountSettings = ({ user }) => (
+    <div>
+        <h2 className="text-2xl font-bold mb-4">Account Settings</h2>
+        <div className="space-y-4">
+            <input type="text" defaultValue={user.firstName} className="p-2 border rounded w-full" placeholder="First Name"/>
+            <input type="text" defaultValue={user.lastName} className="p-2 border rounded w-full" placeholder="Last Name"/>
+            <input type="email" defaultValue={user.email} className="p-2 border rounded w-full" placeholder="Email"/>
+            <input type="password" className="p-2 border rounded w-full" placeholder="New Password"/>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded">Update Profile</button>
+        </div>
+    </div>
+);
+
 
 export default CustomerDashboard;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
-import { AuthProvider, ProtectedRoute, UnifiedLoginPortal } from './components/Login.jsx';
+import { AuthProvider, ProtectedRoute, StaffLoginPortal, CustomerLoginPortal } from './components/Login.jsx';
 
 // Shared Components
 import { Navbar, Footer } from './components/shared/NavigationComponents.jsx';
@@ -49,7 +49,8 @@ const EmployeeLayout = () => (
 function App() {
   const [systemReady, setSystemReady] = useState(false);
   const [systemError, setSystemError] = useState(null);
-  const [showLoginPortal, setShowLoginPortal] = useState(false);
+  const [showStaffLogin, setShowStaffLogin] = useState(false);
+  const [showCustomerLogin, setShowCustomerLogin] = useState(false);
 
   useEffect(() => {
     const checkSystemHealth = async () => {
@@ -83,7 +84,10 @@ function App() {
   return (
     <AuthProvider>
       <div className="flex flex-col min-h-screen">
-        <Navbar onStaffLogin={() => setShowLoginPortal(true)} />
+        <Navbar 
+          onStaffLogin={() => setShowStaffLogin(true)} 
+          onCustomerLogin={() => setShowCustomerLogin(true)}
+        />
         <main className="flex-grow">
           <NotificationSystem />
           <Routes>
@@ -93,11 +97,11 @@ function App() {
             <Route path="/cars" element={<Cars />} />
             <Route path="/tours" element={<Tours />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/my-bookings" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>} />
 
             {/* Admin Protected Routes */}
             <Route path="/owner" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
-              <Route index element={null} /> {/* This makes /owner load the layout with the dashboard content */}
+              <Route index element={null} />
               <Route path="dashboard" element={null} />
               <Route path="manage-cars" element={<ManageCars />} />
               <Route path="manage-tours" element={<ManageTours />} />
@@ -110,7 +114,7 @@ function App() {
 
             {/* Employee Protected Routes */}
             <Route path="/employee" element={<ProtectedRoute requiredRole="employee"><EmployeeLayout /></ProtectedRoute>}>
-               <Route index element={null} /> {/* This makes /employee load the layout with the dashboard content */}
+               <Route index element={null} />
                <Route path="dashboard" element={null} />
                <Route path="manage-bookings" element={<ManageBookings />} />
             </Route>
@@ -120,7 +124,8 @@ function App() {
           </Routes>
         </main>
         <Footer />
-        {showLoginPortal && <UnifiedLoginPortal isOpen={showLoginPortal} onClose={() => setShowLoginPortal(false)} />}
+        {showStaffLogin && <StaffLoginPortal isOpen={showStaffLogin} onClose={() => setShowStaffLogin(false)} />}
+        {showCustomerLogin && <CustomerLoginPortal isOpen={showCustomerLogin} onClose={() => setShowCustomerLogin(false)} />}
       </div>
     </AuthProvider>
   );

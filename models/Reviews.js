@@ -7,7 +7,7 @@ const reviewSchema = new mongoose.Schema({
   itemModel: { type: String, required: true, enum: ['Car', 'Tour'] },
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true, trim: true, maxlength: 1000 },
-  isApproved: { type: Boolean, default: false } // Admin can approve reviews before they are public
+  isApproved: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model('Review', reviewSchema);

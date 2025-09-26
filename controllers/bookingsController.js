@@ -22,6 +22,19 @@ export const getAllBookings = async (req, res) => {
   }
 };
 
+// Get bookings for the currently authenticated user
+export const getMyBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find({ user: req.user.id, archived: false })
+            .populate('itemId')
+            .sort({ createdAt: -1 });
+        res.json({ success: true, data: bookings });
+    } catch (error) {
+        console.error('Error fetching user bookings:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
 // CREATE a new booking
 export const createBooking = async (req, res) => {
     try {
@@ -31,22 +44,26 @@ export const createBooking = async (req, res) => {
         if (itemType === 'car') {
             item = await Car.findById(itemId);
             if (!item || !item.isAvailable) return res.status(400).json({ success: false, message: 'Car not available' });
+            if (numberOfGuests > item.seats) return res.status(400).json({ success: false, message: `This car only has ${item.seats} seats.`});
             const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
             if (days <= 0) return res.status(400).json({ success: false, message: 'Invalid date range' });
             totalPrice = days * item.pricePerDay;
         } else if (itemType === 'tour') {
             item = await Tour.findById(itemId);
             if (!item || !item.isAvailable) return res.status(400).json({ success: false, message: 'Tour not available' });
+            if (numberOfGuests > item.maxGroupSize) return res.status(400).json({ success: false, message: `This tour only allows ${item.maxGroupSize} guests.`});
             totalPrice = numberOfGuests * item.price;
         } else {
             return res.status(400).json({ success: false, message: 'Invalid item type' });
         }
 
-        let userId = req.user ? req.user._id : null;
+        if (totalPrice > 100000 && !req.user) {
+            return res.status(403).json({ success: false, message: 'Bookings over ₱100,000 require an account. Please register and log in.' });
+        }
 
         const bookingData = {
           ...guestInfo,
-          user: userId,
+          user: req.user ? req.user.id : null,
           itemType,
           itemId,
           itemModel: itemType.charAt(0).toUpperCase() + itemType.slice(1),
@@ -54,9 +71,7 @@ export const createBooking = async (req, res) => {
           endDate: itemType === 'car' ? endDate : undefined,
           numberOfGuests,
           totalPrice,
-          paymentProof: {
-            url: req.body.paymentProofUrl
-          }
+          governmentIdUrl: req.body.governmentIdUrl,
         };
 
         const booking = new Booking(bookingData);
@@ -85,12 +100,6 @@ export const updateBookingStatus = async (req, res) => {
     booking.processedBy = req.user.id;
     booking.processedAt = Date.now();
 
-    booking.auditTrail.push({
-        user: req.user.id,
-        action: `status_changed_to_${status}`,
-        notes: adminNotes || `Status updated by ${req.user.role}`
-    });
-
     await booking.save();
 
     await EmailService.sendStatusUpdate(booking);
@@ -103,6 +112,7 @@ export const updateBookingStatus = async (req, res) => {
   }
 };
 
+// UPLOAD payment proof for a booking
 export const uploadPaymentProof = async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id);
@@ -114,27 +124,18 @@ export const uploadPaymentProof = async (req, res) => {
         }
 
         booking.paymentProof = {
-            url: `/uploads/documents/${req.file.filename}`,
+            url: req.file.path,
+            public_id: req.file.filename,
             uploadedAt: Date.now()
         };
-        booking.auditTrail.push({ user: req.user?.id || booking.user, action: 'payment_proof_uploaded' });
-
+        
         await booking.save();
+        req.app.get('io').emit('payment-proof-uploaded', booking);
         res.json({ success: true, message: 'Payment proof uploaded successfully.', data: booking });
 
     } catch (error) {
+        console.error('Error uploading payment proof:', error);
         res.status(500).json({ success: false, message: 'Server error during upload.' });
     }
 };
 
-export const archiveBooking = async (req, res) => {
-    try {
-        const booking = await Booking.findByIdAndUpdate(req.params.id, { archived: true }, { new: true });
-        if (!booking) {
-            return res.status(404).json({ success: false, message: 'Booking not found' });
-        }
-        res.json({ success: true, message: 'Booking archived successfully.' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to archive booking.' });
-    }
-};
