@@ -1,147 +1,55 @@
 import mongoose from 'mongoose';
 
+const auditTrailSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  action: { type: String, required: true }, // e.g., 'created', 'confirmed', 'payment_uploaded', 'cancelled'
+  timestamp: { type: Date, default: Date.now },
+  notes: { type: String }
+}, { _id: false });
+
 const bookingSchema = new mongoose.Schema({
-  bookingReference: {
-    type: String,
-    required: true,
-    unique: true
+  bookingReference: { type: String, required: true, unique: true, index: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Link to the user who booked
+  itemType: { type: String, enum: ['car', 'tour'], required: true },
+  itemId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'itemModel' },
+  itemModel: { type: String, required: true, enum: ['Car', 'Tour'] },
+  firstName: { type: String, required: [true, 'First name is required'], trim: true },
+  lastName: { type: String, required: [true, 'Last name is required'], trim: true },
+  email: { type: String, required: [true, 'Email is required'], trim: true, lowercase: true, index: true },
+  phone: { type: String, required: [true, 'Phone number is required'], trim: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, validate: { validator: function(v) { return this.itemType === 'car' ? v > this.startDate : true; }, message: 'End date must be after start date' }},
+  numberOfGuests: { type: Number, required: true, min: [1, 'Must have at least 1 guest'] },
+  specialRequests: { type: String, maxlength: [500, 'Special requests cannot exceed 500 characters'] },
+  totalPrice: { type: Number, required: true, min: [0, 'Total price cannot be negative'] },
+  paymentMethod: { type: String, enum: ['credit_card', 'gcash', 'paymaya', 'bank_transfer', 'cash'], required: true },
+  // Added fields for payment proof
+  paymentProof: {
+    url: { type: String }, // URL from Cloudinary/AWS S3
+    public_id: { type: String }, // ID from Cloudinary/AWS S3 for deletion
+    uploadedAt: { type: Date }
   },
-  itemType: {
-    type: String,
-    enum: ['car', 'tour'],
-    required: true
-  },
-  itemId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'itemModel'
-  },
-  itemModel: {
-    type: String,
-    required: true,
-    enum: ['Car', 'Tour']
-  },
-  // Guest Information
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    trim: true,
-    lowercase: true
-  },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    trim: true
-  },
-  // Booking Details
-  startDate: {
-    type: Date,
-    required: true
-  },
-  endDate: {
-    type: Date,
-    validate: {
-      validator: function(value) {
-        return this.itemType === 'car' ? value > this.startDate : true;
-      },
-      message: 'End date must be after start date'
-    }
-  },
-  numberOfGuests: {
-    type: Number,
-    required: true,
-    min: [1, 'Must have at least 1 guest']
-  },
-  specialRequests: {
-    type: String,
-    maxlength: [500, 'Special requests cannot exceed 500 characters']
-  },
-  pickupLocation: {
-    type: String,
-    trim: true
-  },
-  // Payment Information
-  paymentMethod: {
-    type: String,
-    enum: ['credit_card', 'gcash', 'paymaya', 'bank_transfer', 'cash'],
-    required: true
-  },
-  totalPrice: {
-    type: Number,
-    required: true,
-    min: [0, 'Total price cannot be negative']
-  },
-  paymentProof: [{
-    filename: String,
-    path: String,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
-  // Status and Processing
-  status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'],
-    default: 'pending'
-  },
-  adminNotes: {
-    type: String,
-    maxlength: [1000, 'Admin notes cannot exceed 1000 characters']
-  },
-  processedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  processedAt: {
-    type: Date
-  },
-  agreedToTerms: {
-    type: Boolean,
-    required: true,
-    validate: {
-      validator: function(value) {
-        return value === true;
-      },
-      message: 'Must agree to terms and conditions'
-    }
-  }
-}, {
-  timestamps: true
-});
+  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'], default: 'pending', index: true },
+  adminNotes: { type: String, maxlength: [1000, 'Admin notes cannot exceed 1000 characters'] },
+  processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  processedAt: { type: Date },
+  agreedToTerms: { type: Boolean, required: true, validate: { validator: (v) => v === true, message: 'Must agree to terms' }},
+  // Added audit trail
+  auditTrail: [auditTrailSchema],
+  archived: { type: Boolean, default: false }
+}, { timestamps: true });
 
 // Generate booking reference before saving
 bookingSchema.pre('save', function(next) {
-  if (!this.bookingReference) {
+  if (this.isNew) {
     const prefix = this.itemType === 'car' ? 'CAR' : 'TOUR';
     const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     this.bookingReference = `${prefix}-${timestamp}-${random}`;
+    // Add initial creation event to audit trail
+    this.auditTrail.push({ action: 'created', notes: 'Booking created by customer.' });
   }
   next();
 });
-
-// Set itemModel based on itemType
-bookingSchema.pre('save', function(next) {
-  if (this.itemType === 'car') {
-    this.itemModel = 'Car';
-  } else if (this.itemType === 'tour') {
-    this.itemModel = 'Tour';
-  }
-  next();
-});
-
-// Indexes
-bookingSchema.index({ bookingReference: 1 });
-bookingSchema.index({ email: 1 });
-bookingSchema.index({ status: 1 });
-bookingSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Booking', bookingSchema);

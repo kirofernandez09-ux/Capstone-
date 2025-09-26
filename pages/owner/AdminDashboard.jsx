@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../components/Login.jsx';
 import DataService from '../../components/services/DataService.jsx';
+import BookingCalendar from './BookingCalendar';
 
 // Re-usable helper components
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const formatCurrency = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+const isDashboardPage = location.pathname === '/owner' || location.pathname === '/owner/dashboard';
 
 const AdminDashboard = () => {
     const location = useLocation();
@@ -67,6 +69,7 @@ const AdminDashboard = () => {
                 <h1 className="text-3xl font-bold">Admin Dashboard</h1>
                 <p>Welcome back, {user?.firstName}! Here's a real-time overview of your business.</p>
             </div>
+            
 
             {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
             
@@ -81,6 +84,12 @@ const AdminDashboard = () => {
                     <StatCard title="New Messages" value={dashboardData.summary.newMessages || 0} icon={Bell} />
                 </div>
             )}
+            
+            <div className="mt-6">
+                 <h2 className="text-2xl font-semibold text-gray-800 mb-4">Booking Calendar</h2>
+                 <BookingCalendar />
+            </div>
+
             
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
