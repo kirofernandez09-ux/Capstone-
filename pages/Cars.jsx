@@ -26,7 +26,12 @@ const Cars = () => {
     try {
       const response = await DataService.fetchAllCars({ ...currentFilters, page, limit: pagination.limit, archived: false, isAvailable: true });
       setCars(response.data);
-      setPagination(prev => ({ ...prev, total: response.pagination.total, page }));
+      // --- FIX STARTS HERE ---
+      // Safely set pagination data only if it exists in the response
+      if (response.pagination) {
+        setPagination(prev => ({ ...prev, total: response.pagination.total, page }));
+      }
+      // --- FIX ENDS HERE ---
     } catch (error) {
       console.error("Failed to fetch cars:", error);
     } finally {
@@ -76,7 +81,7 @@ const Cars = () => {
       {/* Pagination */}
       <div className="flex justify-center items-center mt-8">
         <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"><ChevronLeft/></button>
-        <span>Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}</span>
+        <span>Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit) || 1}</span>
         <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)} className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"><ChevronRight/></button>
       </div>
 

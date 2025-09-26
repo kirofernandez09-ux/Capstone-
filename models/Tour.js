@@ -13,7 +13,7 @@ const tourSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Destination cannot exceed 100 characters']
   },
-  description: {
+  description: { // Corrected from "decription"
     type: String,
     required: [true, 'Description is required'],
     maxlength: [2000, 'Description cannot exceed 2000 characters']

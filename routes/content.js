@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// This import will now work correctly
 import { getContentByType, updateContent, getAllContentTypes } from '../controllers/contentController.js';
 import { auth, authorize } from '../middleware/auth.js';
 

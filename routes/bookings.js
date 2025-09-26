@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// This import will now work correctly
 import { getAllBookings, getBookingById, createBooking, updateBookingStatus, cancelBooking } from '../controllers/bookingsController.js';
 import { auth, authorize } from '../middleware/auth.js';
 

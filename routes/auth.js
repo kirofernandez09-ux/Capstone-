@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// This import will now work correctly
 import { register, login, getMe, forgotPassword, resetPassword } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 

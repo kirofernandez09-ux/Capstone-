@@ -1,5 +1,5 @@
 import express from 'express';
-// FIX: Corrected path
+// FIX: Corrected folder path to 'controllers'
 import { getAllTours, getTourById, createTour, updateTour, archiveTour } from '../controllers/toursController.js';
 import { auth, authorize } from '../middleware/auth.js';
 
