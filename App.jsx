@@ -26,6 +26,7 @@ import EmployeeManagement from './pages/owner/EmployeeManagement.jsx';
 import Reports from './pages/owner/Reports.jsx';
 import Messages from './pages/owner/Message.jsx';
 import ContentManagement from './pages/owner/ContentManagement.jsx';
+import ManageReviews from './pages/owner/ManageReviews.jsx';
 
 // Employee Pages & Layout
 import EmployeeDashboard from './pages/employee/EmployeeDashboard.jsx';
@@ -104,8 +105,8 @@ return (
 
             {/* Admin Protected Routes */}
             <Route path="/owner" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
-              <Route index element={null} />
-              <Route path="dashboard" element={null} />
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="manage-cars" element={<ManageCars />} />
               <Route path="manage-tours" element={<ManageTours />} />
               <Route path="manage-bookings" element={<ManageBookings />} />
@@ -113,19 +114,15 @@ return (
               <Route path="reports" element={<Reports />} />
               <Route path="messages" element={<Messages />} />
               <Route path="content-management" element={<ContentManagement />} />
+              <Route path="manage-reviews" element={<ManageReviews />} />
             </Route>
 
-            {/* --- REVISED Employee Protected Routes --- */}
+            {/* Employee Protected Routes */}
             <Route path="/employee" element={<ProtectedRoute requiredRole="employee"><EmployeeLayout /></ProtectedRoute>}>
-               <Route index element={null} />
-               <Route path="dashboard" element={null} />
-               {/* These routes allow employees to use the same components as admins, but via their own protected path */}
-               <Route path="manage-cars" element={<ManageCars />} />
-               <Route path="manage-tours" element={<ManageTours />} />
+               <Route index element={<EmployeeDashboard />} />
+               <Route path="dashboard" element={<EmployeeDashboard />} />
                <Route path="manage-bookings" element={<ManageBookings />} />
                <Route path="messages" element={<Messages />} />
-               <Route path="reports" element={<Reports />} />
-               <Route path="content-management" element={<ContentManagement />} />
             </Route>
 
             <Route path="/unauthorized" element={<div>Access Denied</div>} />

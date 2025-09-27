@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
     LayoutDashboard, Calendar, FileText, Settings, MessageSquare, Users,
     Car, MapPin, LogOut, Menu, X, Bell, User, ChevronDown, Globe,
-    Clock, CheckCircle, AlertTriangle, Eye, Plus, BarChart3, Activity, RefreshCw, RotateCcw, Edit, Archive
+    Clock, CheckCircle, AlertTriangle, Eye, Plus, BarChart3, Activity, RefreshCw, RotateCcw, Edit, Archive, Star
 } from 'lucide-react';
 import { useAuth } from '../../components/Login.jsx';
 import DataService from '../../components/services/DataService.jsx';
@@ -21,7 +21,7 @@ const AdminDashboard = () => {
     const { socket } = useSocket();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [dashboardData, setDashboardData] = useState(null); // --- MODIFIED initial state ---
+    const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -32,6 +32,7 @@ const AdminDashboard = () => {
         { name: 'Manage Cars', href: '/owner/manage-cars', icon: Car },
         { name: 'Manage Tours', href: '/owner/manage-tours', icon: MapPin },
         { name: 'Manage Bookings', href: '/owner/manage-bookings', icon: Calendar },
+        { name: 'Manage Reviews', href: '/owner/manage-reviews', icon: Star },
         { name: 'Reports', href: '/owner/reports', icon: FileText },
         { name: 'Content Management', href: '/owner/content-management', icon: Settings },
         { name: 'Messages', href: '/owner/messages', icon: MessageSquare },
@@ -79,7 +80,6 @@ const AdminDashboard = () => {
         navigate('/');
     };
     
-    // This is the main view for your dashboard, using your original design with live data.
     const renderDashboardView = () => (
         <div className="space-y-6">
             <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-6 text-white shadow-lg">
@@ -87,13 +87,10 @@ const AdminDashboard = () => {
                 <p>Welcome back, {user?.firstName}! Here's a real-time overview of your business.</p>
             </div>
             
-
             {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
             
-            {/* --- ADDED conditional rendering check --- */}
             {loading ? <p>Loading statistics...</p> : dashboardData && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                    {/* Stat Cards */}
                     <StatCard title="Total Cars" value={dashboardData.summary.totalCars || 0} icon={Car} />
                     <StatCard title="Total Tours" value={dashboardData.summary.totalTours || 0} icon={MapPin} />
                     <StatCard title="Total Bookings" value={dashboardData.summary.totalBookings || 0} icon={Calendar} />
@@ -107,10 +104,7 @@ const AdminDashboard = () => {
                  <h2 className="text-2xl font-semibold text-gray-800 mb-4">Booking Calendar</h2>
                  <BookingCalendar />
             </div>
-
             
-            {/* Recent Activity */}
-            {/* --- ADDED conditional rendering check --- */}
             {dashboardData && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <RecentActivityList title="Recent Bookings" items={dashboardData.recentBookings} type="booking" />
@@ -122,14 +116,11 @@ const AdminDashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
-            {/* Sidebar */}
             <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                {/* Sidebar Header */}
                 <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-indigo-600 to-violet-600">
                     <span className="text-white font-semibold text-lg">DoRayd Admin</span>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white"><X /></button>
                 </div>
-                {/* Navigation */}
                 <nav className="mt-2 px-3 flex-1 overflow-y-auto">
                     {navigation.map((item) => (
                         <Link key={item.name} to={item.href} onClick={() => setSidebarOpen(false)} className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-xl my-1 ${location.pathname.startsWith(item.href) ? 'bg-indigo-100 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'}`}>
@@ -138,7 +129,6 @@ const AdminDashboard = () => {
                         </Link>
                     ))}
                 </nav>
-                 {/* User Info */}
                 <div className="p-4 border-t">
                     <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
@@ -148,13 +138,12 @@ const AdminDashboard = () => {
                 </div>
             </div>
             
-            {/* Main Content Area */}
             <div className="flex-1 flex flex-col">
                 <header className="sticky top-0 z-40 bg-white shadow-sm border-b">
                     <div className="flex items-center justify-between h-16 px-4">
                         <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-slate-500"><Menu /></button>
                         <h1 className="text-xl font-bold text-slate-800">{navigation.find(nav => location.pathname.startsWith(nav.href))?.name || 'Dashboard'}</h1>
-                        <div>{/* Other header items like notifications can go here */}</div>
+                        <div></div>
                     </div>
                 </header>
                 <main className="flex-1 p-6 overflow-y-auto">
@@ -165,7 +154,6 @@ const AdminDashboard = () => {
     );
 };
 
-// Helper components to keep the main component clean
 const StatCard = ({ title, value, icon: Icon }) => (
   <div className="bg-white p-4 rounded-xl shadow-sm border">
     <Icon className="w-8 h-8 text-indigo-500 mb-2" />

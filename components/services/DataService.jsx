@@ -2,17 +2,11 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-/**
- * Retrieves the authentication token from localStorage.
- */
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-/**
- * A centralized error handler for API calls.
- */
 const handleError = (error, defaultMessage = 'An unknown error occurred.') => {
   console.error('API Call Failed:', error);
   const message = error.response?.data?.message || error.message || defaultMessage;
@@ -20,7 +14,6 @@ const handleError = (error, defaultMessage = 'An unknown error occurred.') => {
 };
 
 const DataService = {
-  // --- Health Check ---
   checkHealth: async () => {
     try {
       const response = await axios.get(`${API_URL}/health`);
@@ -29,8 +22,6 @@ const DataService = {
       return handleError(error, 'Server health check failed.');
     }
   },
-
-  // --- Authentication & User Account ---
   register: async (userData) => {
     try {
       const response = await axios.post(`${API_URL}/auth/register`, userData);
@@ -43,14 +34,12 @@ const DataService = {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
       if (response.data.token) {
-        // --- ENSURE token is set before returning ---
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       return response.data;
     } catch (error) {
-      // --- REMOVED automatic logout on failed login for better user experience ---
-      throw new Error(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      throw new Error(error.response?.data?.message || 'Login failed.');
     }
   },
   logout: () => {
@@ -81,8 +70,6 @@ const DataService = {
           return handleError(error, 'Failed to change password.');
       }
   },
-
-  // --- File Upload ---
   uploadPaymentProof: async (bookingId, file) => {
     const formData = new FormData();
     formData.append('paymentProof', file);
@@ -98,8 +85,6 @@ const DataService = {
       return handleError(error, 'Payment proof upload failed.');
     }
   },
-  
-  // --- Cars & Tours (Public) ---
   fetchAllCars: async (filters = {}) => {
     try {
       const response = await axios.get(`${API_URL}/cars`, { params: filters });
@@ -116,10 +101,7 @@ const DataService = {
       return handleError(error);
     }
   },
-
-  // --- Bookings ---
   createBooking: async (bookingData) => {
-    // This supports both guest and registered user bookings
     try {
       const response = await axios.post(`${API_URL}/bookings`, bookingData, { headers: getAuthHeader() });
       return response.data;
@@ -135,8 +117,6 @@ const DataService = {
       return handleError(error);
     }
   },
-  
-  // --- Reviews/Feedback ---
   submitFeedback: async (feedbackData) => {
     try {
       const response = await axios.post(`${API_URL}/reviews`, feedbackData, { headers: getAuthHeader() });
@@ -153,11 +133,6 @@ const DataService = {
           return handleError(error, 'Failed to fetch your reviews.');
       }
   },
-  
-  // ===============================================
-  // ADMIN & EMPLOYEE FUNCTIONS (for completeness)
-  // ===============================================
-
   fetchAllMessages: async () => {
     try {
         const response = await axios.get(`${API_URL}/messages`, { headers: getAuthHeader() });
@@ -166,7 +141,6 @@ const DataService = {
         return handleError(error, 'Failed to fetch messages.');
     }
   },
-
   fetchAllEmployees: async () => {
       try {
           const response = await axios.get(`${API_URL}/users/employees`, { headers: getAuthHeader() });
@@ -175,8 +149,6 @@ const DataService = {
           return handleError(error, 'Failed to fetch employees.');
       }
   },
-  
-  // --- ADDED Employee Management Functions ---
   createEmployee: async (employeeData) => {
     try {
       const response = await axios.post(`${API_URL}/users/employees`, employeeData, { headers: getAuthHeader() });
@@ -185,7 +157,6 @@ const DataService = {
       return handleError(error, 'Failed to create employee.');
     }
   },
-
   updateEmployee: async (id, employeeData) => {
     try {
       const response = await axios.put(`${API_URL}/users/employees/${id}`, employeeData, { headers: getAuthHeader() });
@@ -194,7 +165,6 @@ const DataService = {
       return handleError(error, 'Failed to update employee.');
     }
   },
-
   deleteEmployee: async (id) => {
     try {
       const response = await axios.delete(`${API_URL}/users/employees/${id}`, { headers: getAuthHeader() });
@@ -203,7 +173,6 @@ const DataService = {
       return handleError(error, 'Failed to delete employee.');
     }
   },
-  
   fetchAllBookings: async () => {
     try {
       const response = await axios.get(`${API_URL}/bookings`, { headers: getAuthHeader() });
@@ -244,6 +213,30 @@ const DataService = {
       return handleError(error, `Failed to update '${type}' content.`);
     }
   },
+  fetchAllReviews: async () => {
+    try {
+        const response = await axios.get(`${API_URL}/reviews`, { headers: getAuthHeader() });
+        return response.data;
+    } catch(error) {
+        return handleError(error, 'Failed to fetch all reviews.');
+    }
+  },
+  approveReview: async (id) => {
+      try {
+          const response = await axios.put(`${API_URL}/reviews/${id}/approve`, {}, { headers: getAuthHeader() });
+          return response.data;
+      } catch(error) {
+          return handleError(error, 'Failed to approve review.');
+      }
+  },
+    deleteReview: async (id) => {
+      try {
+          const response = await axios.delete(`${API_URL}/reviews/${id}`, { headers: getAuthHeader() });
+          return response.data;
+      } catch(error) {
+          return handleError(error, 'Failed to delete review.');
+      }
+  }
 };
 
 export default DataService;
