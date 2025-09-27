@@ -27,6 +27,8 @@ import Reports from './pages/owner/Reports.jsx';
 import Messages from './pages/owner/Message.jsx';
 import ContentManagement from './pages/owner/ContentManagement.jsx';
 import ManageReviews from './pages/owner/ManageReviews.jsx';
+// --- FIX: Added the missing import for CustomerManagement ---
+import CustomerManagement from './pages/owner/CustomerManagement.jsx';
 
 // Employee Pages & Layout
 import EmployeeDashboard from './pages/employee/EmployeeDashboard.jsx';
@@ -85,8 +87,8 @@ function App() {
 return (
     <AuthProvider>
       <div className="flex flex-col min-h-screen">
-        <Navbar 
-          onStaffLogin={() => setShowStaffLogin(true)} 
+        <Navbar
+          onStaffLogin={() => setShowStaffLogin(true)}
           onCustomerLogin={() => setShowCustomerLogin(true)}
         />
         <main className="flex-grow">
@@ -98,9 +100,9 @@ return (
             <Route path="/cars" element={<Cars />} />
             <Route path="/tours" element={<Tours />} />
             <Route path="/contact" element={<Contact />} />
-            <Route 
-              path="/my-bookings" 
-              element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>} 
+            <Route
+              path="/my-bookings"
+              element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>}
             />
 
             {/* Admin Protected Routes */}
@@ -115,6 +117,7 @@ return (
               <Route path="messages" element={<Messages />} />
               <Route path="content-management" element={<ContentManagement />} />
               <Route path="manage-reviews" element={<ManageReviews />} />
+              <Route path="customer-management" element={<CustomerManagement />} />
             </Route>
 
             {/* Employee Protected Routes */}
@@ -123,6 +126,10 @@ return (
                <Route path="dashboard" element={<EmployeeDashboard />} />
                <Route path="manage-bookings" element={<ManageBookings />} />
                <Route path="messages" element={<Messages />} />
+               <Route path="manage-cars" element={<ManageCars />} />
+               <Route path="manage-tours" element={<ManageTours />} />
+               <Route path="reports" element={<Reports />} />
+               <Route path="content-management" element={<ContentManagement />} />
             </Route>
 
             <Route path="/unauthorized" element={<div>Access Denied</div>} />

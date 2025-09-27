@@ -12,7 +12,15 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    const user = new User({ email, password, firstName, lastName, phone, role: 'customer' });
+    // --- FIX: Explicitly set the role to 'customer' on creation ---
+    const user = new User({ 
+        email, 
+        password, 
+        firstName, 
+        lastName, 
+        phone, 
+        role: 'customer' 
+    });
     await user.save();
 
     res.status(201).json({ success: true, message: 'User registered successfully' });

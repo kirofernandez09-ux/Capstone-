@@ -23,14 +23,10 @@ const bookingSchema = new mongoose.Schema({
   specialRequests: { type: String, maxlength: [500, 'Special requests cannot exceed 500 characters'] },
   totalPrice: { type: Number, required: true, min: [0, 'Total price cannot be negative'] },
   paymentMethod: { type: String, enum: ['credit_card', 'gcash', 'paymaya', 'bank_transfer', 'cash'], default: 'bank_transfer' },
-  // --- CHANGE STARTS HERE ---
-  governmentIdUrl: { type: String }, // Field to store the uploaded ID URL
-  // --- CHANGE ENDS HERE ---
-  paymentProof: {
-    url: { type: String },
-    public_id: { type: String },
-    uploadedAt: { type: Date }
-  },
+  governmentIdUrl: { type: String },
+  paymentProofUrl: { type: String },
+  paymentReferenceNumber: { type: String },
+  amountPaid: { type: Number },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'], default: 'pending', index: true },
   adminNotes: { type: String, maxlength: [1000, 'Admin notes cannot exceed 1000 characters'] },
   processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -40,6 +36,8 @@ const bookingSchema = new mongoose.Schema({
   archived: { type: Boolean, default: false }
 }, { timestamps: true });
 
+/*
+// --- FIX: REMOVED the pre-save hook to prevent conflicts ---
 bookingSchema.pre('save', function(next) {
   if (this.isNew) {
     const prefix = this.itemType === 'car' ? 'CAR' : 'TOUR';
@@ -50,5 +48,6 @@ bookingSchema.pre('save', function(next) {
   }
   next();
 });
+*/
 
 export default mongoose.model('Booking', bookingSchema);

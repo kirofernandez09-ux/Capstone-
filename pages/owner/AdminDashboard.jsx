@@ -37,8 +37,8 @@ const AdminDashboard = () => {
         { name: 'Content Management', href: '/owner/content-management', icon: Settings },
         { name: 'Messages', href: '/owner/messages', icon: MessageSquare },
         { name: 'Employee Management', href: '/owner/employee-management', icon: Users },
+        { name: 'Customer Management', href: '/owner/customer-management', icon: Users },
     ];
-
     const fetchDashboardData = async () => {
         setLoading(true);
         setError(null);

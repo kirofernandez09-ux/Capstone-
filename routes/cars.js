@@ -1,12 +1,18 @@
 import express from 'express';
-// This import will now work correctly
 import { getAllCars, createCar, updateCar, archiveCar } from '../controllers/carsController.js';
-import { auth, authorize } from '../middleware/auth.js';
+import { auth } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permission.js';
 
 const router = express.Router();
 
-router.route('/').get(getAllCars).post(auth, authorize('admin', 'employee'), createCar);
-router.route('/:id').put(auth, authorize('admin', 'employee'), updateCar);
-router.route('/:id/archive').patch(auth, authorize('admin', 'employee'), archiveCar);
+router.route('/')
+    .get(getAllCars)
+    .post(auth, checkPermission('cars', 'write'), createCar);
+
+router.route('/:id')
+    .put(auth, checkPermission('cars', 'write'), updateCar);
+
+router.route('/:id/archive')
+    .patch(auth, checkPermission('cars', 'full'), archiveCar);
 
 export default router;

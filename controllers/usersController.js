@@ -84,3 +84,35 @@ export const changeEmployeePassword = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
+
+export const getAllCustomers = async (req, res) => {
+  try {
+    const customers = await User.find({ role: 'customer' }).select('-password');
+    res.json({ success: true, data: customers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// --- ADDED: Admin resets a customer's password ---
+export const resetCustomerPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'New password is required.' });
+        }
+        
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // The pre-save hook in the User model will automatically hash this password
+        user.password = password; 
+        await user.save();
+        
+        res.json({ success: true, message: 'Customer password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};

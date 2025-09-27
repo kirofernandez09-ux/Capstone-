@@ -103,8 +103,14 @@ export const deleteReview = async (req, res) => {
 // Get all reviews (Admin only)
 export const getAllReviews = async (req, res) => {
     try {
-        const reviews = await Review.find().populate('user', 'firstName lastName').populate('item', 'title brand model');
-        res.json({ success: true, data: reviews });
+        const reviews = await Review.find()
+            .populate('user', 'firstName lastName')
+            .populate('item', 'title brand model');
+
+        // FIX: Filter out reviews with missing user or item references
+        const validReviews = reviews.filter(review => review.user && review.item);
+
+        res.json({ success: true, data: validReviews });
     } catch (error) {
         console.error('Error fetching all reviews:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch reviews.' });

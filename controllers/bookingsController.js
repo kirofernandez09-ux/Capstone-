@@ -38,51 +38,70 @@ export const getMyBookings = async (req, res) => {
 // CREATE a new booking
 export const createBooking = async (req, res) => {
     try {
-        const { itemType, itemId, startDate, endDate, numberOfGuests, ...guestInfo } = req.body;
+        const {
+            itemType, itemId, startDate, endDate, numberOfGuests,
+            governmentIdUrl, paymentProofUrl, paymentMethod, paymentReferenceNumber, amountPaid,
+            ...guestInfo
+        } = req.body;
+
         let item, totalPrice = 0;
 
         if (itemType === 'car') {
             item = await Car.findById(itemId);
             if (!item || !item.isAvailable) return res.status(400).json({ success: false, message: 'Car not available' });
-            if (numberOfGuests > item.seats) return res.status(400).json({ success: false, message: `This car only has ${item.seats} seats.`});
+            if (numberOfGuests > item.seats) {
+                return res.status(400).json({ success: false, message: `Number of guests (${numberOfGuests}) exceeds the car's seating capacity of ${item.seats}.` });
+            }
             const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
             if (days <= 0) return res.status(400).json({ success: false, message: 'Invalid date range' });
             totalPrice = days * item.pricePerDay;
         } else if (itemType === 'tour') {
             item = await Tour.findById(itemId);
             if (!item || !item.isAvailable) return res.status(400).json({ success: false, message: 'Tour not available' });
-            if (numberOfGuests > item.maxGroupSize) return res.status(400).json({ success: false, message: `This tour only allows ${item.maxGroupSize} guests.`});
+            if (numberOfGuests > item.maxGroupSize) return res.status(400).json({ success: false, message: `This tour only allows ${item.maxGroupSize} guests.` });
             totalPrice = numberOfGuests * item.price;
         } else {
             return res.status(400).json({ success: false, message: 'Invalid item type' });
         }
 
-        if (totalPrice > 100000 && !req.user) {
-            return res.status(403).json({ success: false, message: 'Bookings over ₱100,000 require an account. Please register and log in.' });
-        }
+        const prefix = itemType === 'car' ? 'CAR' : 'TOUR';
+        const timestamp = Date.now().toString().slice(-6);
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const bookingReference = `${prefix}-${timestamp}-${random}`;
 
         const bookingData = {
           ...guestInfo,
+          bookingReference,
           user: req.user ? req.user.id : null,
           itemType,
           itemId,
           itemModel: itemType.charAt(0).toUpperCase() + itemType.slice(1),
-          startDate,
-          endDate: itemType === 'car' ? endDate : undefined,
+          // For tours, use the tour's own start date
+          startDate: itemType === 'tour' ? item.startDate : startDate,
+          endDate: itemType === 'tour' ? item.endDate : endDate,
           numberOfGuests,
           totalPrice,
-          governmentIdUrl: req.body.governmentIdUrl,
+          agreedToTerms: true,
+          governmentIdUrl,
+          paymentProofUrl,
+          paymentMethod,
+          paymentReferenceNumber,
+          amountPaid,
         };
 
         const booking = new Booking(bookingData);
         await booking.save();
-        
-        await EmailService.sendBookingConfirmation(booking);
 
-        // --- ADD THIS LINE ---
+        // Isolate email sending to prevent it from crashing the request
+        try {
+            await EmailService.sendBookingConfirmation(booking);
+        } catch (emailError) {
+            console.error('Email sending failed for booking:', booking.bookingReference, emailError);
+        }
+
         req.app.get('io').emit('new-booking', booking);
-
         res.status(201).json({ success: true, data: booking });
+
     } catch (error) {
         console.error('Error creating booking:', error);
         res.status(500).json({ success: false, message: error.message });

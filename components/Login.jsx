@@ -14,7 +14,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const validateToken = async () => {
-      const token = localStorage.getItem('token');
+      // --- FIX: Use sessionStorage instead of localStorage ---
+      const token = sessionStorage.getItem('token');
       if (token) {
         try {
           const response = await DataService.getCurrentUser();
@@ -22,13 +23,11 @@ export const AuthProvider = ({ children }) => {
             setUser(response.user);
             setIsAuthenticated(true);
           } else {
-            // --- CLEAR session if token is invalid ---
             DataService.logout();
             setUser(null);
             setIsAuthenticated(false);
           }
         } catch (error) {
-          // --- CLEAR session on any error ---
           DataService.logout();
           setUser(null);
           setIsAuthenticated(false);
@@ -78,7 +77,6 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
 export const ProtectedRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
